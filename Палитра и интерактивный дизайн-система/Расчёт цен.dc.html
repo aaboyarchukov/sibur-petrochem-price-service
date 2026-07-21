@@ -100,7 +100,7 @@
             <button onClick="{{ goParams }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:42px;padding:0 22px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px" style-hover="background:var(--action-600);border-color:var(--action-600)">Далее — параметры →</button>
           </sc-if>
         </div>
-        <p class="text-muted" style="max-width:640px;font-size:14px;margin-bottom:22px">Сервису нужно 8 Excel-источников. Каждый проверяется отдельно: ошибка одного файла не блокирует остальные — проблемные помечаются, расчёт использует валидные.</p>
+        <p class="text-muted" style="max-width:640px;font-size:14px;margin-bottom:22px">Загрузите два файла — прогноз спроса <span class="mono">ssp.xlsx</span> и каталог формул <span class="mono">formulas.xlsx</span>. Остальные источники подтягиваются из справочников сервиса и в загрузке не нуждаются.</p>
 
         <!-- empty state -->
         <sc-if value="{{ notUploaded }}" hint-placeholder-val="{{ true }}">
@@ -111,7 +111,7 @@
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 15V3m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
             </div>
             <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;margin-bottom:4px">Данные не загружены</div>
-            <p class="text-muted" style="font-size:13px;margin-bottom:18px;max-width:420px">Перетащите Excel-файлы или загрузите демонстрационный набор, чтобы увидеть проверку источников.</p>
+            <p class="text-muted" style="font-size:13px;margin-bottom:18px;max-width:440px">Перетащите <span class="mono">ssp.xlsx</span> и <span class="mono">formulas.xlsx</span> или загрузите демонстрационный набор, чтобы увидеть проверку источников.</p>
             <button onClick="{{ doLoad }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:42px;padding:0 22px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer" style-hover="background:var(--action-600)">Загрузить демо-набор</button>
             <div class="mono" style="margin-top:22px;display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;max-width:640px">
               <sc-for list="{{ sources }}" as="s" hint-placeholder-count="8">
@@ -138,8 +138,22 @@
           </sc-for>
         </div>
 
+        <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin:2px 0 8px">Справочники сервиса · подтягиваются автоматически</div>
+        <div class="blueprint" style="padding:14px 16px;background:var(--panel);margin-bottom:24px">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 22px">
+            <sc-for list="{{ refs }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--st-ok)" stroke-width="1.8" style="flex:none"><path d="M20 6 9 17l-5-5"/></svg>
+                <span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                <span class="mono text-muted" style="font-size:10.5px;flex:none">{{ r.rowsLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <h4 style="margin:0;font-size:17px">Превью — Прогноз спроса.xlsx</h4>
+          <h4 style="margin:0;font-size:17px">Превью — ssp.xlsx</h4>
           <span class="mono text-muted" style="font-size:12px">первые 5 из 4 812 строк</span>
         </div>
         <div class="blueprint" style="background:var(--panel);overflow:hidden">
@@ -735,16 +749,19 @@ class Component extends DCLogic {
         numStyle:`width:19px;height:19px;display:grid;place-items:center;font-size:11px;background:${active?'var(--color-accent)':'var(--color-divider)'};color:${active?'var(--color-bg)':'var(--color-text)'}` };
     });
 
-    // sources
+    // user-uploaded sources (only 2)
     const srcDefs = [
-      ['Прогноз спроса','forecast.xlsx',4812,'ok'],
-      ['Договорные формулы','formulas.xlsx',1284,'ok'],
-      ['Компоненты формул','components.xlsx',3960,'ok'],
-      ['Типы термов','term_types.xlsx',48,'ok'],
-      ['Котировки','quotes.xlsx',9120,'ok'],
-      ['Маппинг котировок','quote_map.xlsx',612,'warn'],
-      ['Курсы валют','fx_rates.xlsx',744,'ok'],
-      ['Группы материалов','mat_groups.xlsx',196,'ok']
+      ['Прогноз спроса','ssp.xlsx',4812,'ok'],
+      ['Каталог формул','formulas.xlsx',1284,'ok']
+    ];
+    // reference books pulled from the service (not uploaded by user)
+    const refDefs = [
+      ['Компоненты формул','components.xlsx',3960],
+      ['Типы термов','term_types.xlsx',48],
+      ['Котировки','quotes.xlsx',9120],
+      ['Маппинг котировок','quote_map.xlsx',612],
+      ['Курсы валют','fx_rates.xlsx',744],
+      ['Группы материалов','mat_groups.xlsx',196]
     ];
     const chip = (v)=>{
       const c = v==='ok'?'ok':v==='warn'?'warn':'err';
@@ -754,6 +771,7 @@ class Component extends DCLogic {
       icon:'▦', iconColor: d[3]==='ok'?'var(--color-accent)':'var(--st-warn)',
       statusLabel: d[3]==='ok'?'загружен':'2 дубля',
       chipStyle: chip(d[3]) }));
+    const refs = refDefs.map(d=>({ name:d[0], file:d[1], rowsLabel:d[2].toLocaleString('ru-RU')+' строк' }));
 
     const preview = st.rows.slice(0,5).map(r=>({ id:r.id, period:r.period, client:r.client, material:r.material, vol:this.fmt0(r.vol), deal:r.deal }));
 
@@ -944,7 +962,7 @@ class Component extends DCLogic {
       submitted: st.submitted, notSubmitted: !st.submitted, submittedAt: st.submittedAt,
       saveMyPart: ()=>{ const d=new Date(); const at=('0'+d.getDate()).slice(-2)+'.07.2026, '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); this.setState({submitted:true, submittedAt:at}); this.fireToast('Ваш участок сохранён и присоединён к сводному документу'); },
       uploaded: st.uploaded, notUploaded: !st.uploaded,
-      sources, preview,
+      sources, refs, preview,
       goUpload: ()=> this.goTo('upload'), goParams: ()=> this.goTo('params'),
       doLoad: ()=> this.doLoad(), doCompute: ()=> this.doCompute(),
       progressPct: Math.round(st.progress)+'%', progressRows: Math.round(4812*st.progress/100).toLocaleString('ru-RU'),
