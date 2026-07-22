@@ -4,6 +4,8 @@ stages:
 .build:
   stage: build
   image: docker:latest
+  tags:
+    - self-hosted
   services:
     - docker:dind
   variables:
