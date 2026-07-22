@@ -1,0 +1,37 @@
+stages:
+  - build
+
+.build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    # - docker build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" "$CONTEXT"
+    # - docker push "$IMAGE_TAG"
+    # - docker push "$IMAGE_LATEST"
+    - echo "Hello world!"
+
+build-backend:
+  extends: .build
+  variables:
+    CONTEXT: backend
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA"
+    IMAGE_LATEST: "$CI_REGISTRY_IMAGE/backend:latest"
+  # rules:
+  #   - changes:
+  #       - backend/**/*
+
+build-frontend:
+  extends: .build
+  variables:
+    CONTEXT: frontend
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
+    IMAGE_LATEST: "$CI_REGISTRY_IMAGE/frontend:latest"
+  # rules:
+  #   - changes:
+  #       - frontend/**/*
