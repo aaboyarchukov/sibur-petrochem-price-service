@@ -33,3 +33,4 @@ go.work.sum
 .claude/
 .specify/
 .DS_Store
+openspec/

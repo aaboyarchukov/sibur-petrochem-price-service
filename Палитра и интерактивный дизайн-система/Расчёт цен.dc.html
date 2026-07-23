@@ -93,11 +93,11 @@
       <div style="max-width:1080px;margin:0 auto;padding:28px 24px 64px">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:10px">
           <div style="flex:1;min-width:0">
-            <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin-bottom:4px">Шаг 1 / 3 · Исходные данные</div>
+            <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin-bottom:4px">Исходные данные</div>
             <h2 style="margin:0;font-size:30px;white-space:nowrap">Загрузка источников</h2>
           </div>
           <sc-if value="{{ uploaded }}" hint-placeholder-val="{{ true }}">
-            <button onClick="{{ goParams }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:42px;padding:0 22px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px" style-hover="background:var(--action-600);border-color:var(--action-600)">Далее — параметры →</button>
+            <button onClick="{{ doCompute }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:46px;padding:0 26px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:9px" style-hover="background:var(--action-600);border-color:var(--action-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9 18 6-6-6-6"/></svg>Рассчитать 4 812 строк</button>
           </sc-if>
         </div>
         <p class="text-muted" style="max-width:640px;font-size:14px;margin-bottom:22px">Загрузите два файла — прогноз спроса <span class="mono">ssp.xlsx</span> и каталог формул <span class="mono">formulas.xlsx</span>. Остальные источники подтягиваются из справочников сервиса и в загрузке не нуждаются.</p>
@@ -174,60 +174,6 @@
     </div>
     </sc-if>
 
-    <!-- ═══════════ PARAMS ═══════════ -->
-    <sc-if value="{{ isParams }}" hint-placeholder-val="{{ true }}">
-    <div style="height:100%;overflow:auto">
-      <div style="max-width:760px;margin:0 auto;padding:28px 24px 64px">
-        <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin-bottom:4px">Шаг 2 / 3 · Параметры</div>
-        <h2 style="margin:0 0 6px;font-size:30px">Параметры расчёта</h2>
-        <p class="text-muted" style="font-size:14px;margin-bottom:24px">Выберите период и, при необходимости, ограничьте набор фильтрами. Расчёт применит договорные формулы ко всем строкам прогноза за период.</p>
-
-        <div class="blueprint" style="background:var(--panel);padding:22px 24px;display:grid;gap:18px">
-          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-            <div class="field"><label>Период расчёта *</label>
-              <div style="position:relative">
-                <select class="input" style="min-height:42px;-webkit-appearance:none;appearance:none;padding-right:40px">
-                  <option>Июнь 2026</option><option>Май 2026</option><option>Апрель 2026</option><option>Июль 2026 (прогноз)</option>
-                </select>
-                <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.55;font-size:12px">▼</span>
-              </div>
-            </div>
-            <div class="field"><label>Валюта отчёта</label>
-              <div style="position:relative">
-                <select class="input" style="min-height:42px;-webkit-appearance:none;appearance:none;padding-right:40px"><option>Как в договоре</option><option>Привести к ₽</option><option>Привести к $</option></select>
-                <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.55;font-size:12px">▼</span>
-              </div>
-            </div>
-          </div>
-          <div class="field"><label>Группа материалов <span class="text-muted">(опционально)</span></label>
-            <div style="position:relative">
-              <select class="input" style="min-height:42px;-webkit-appearance:none;appearance:none;padding-right:40px"><option>Все группы</option><option>Полиолефины</option><option>Стиролы и каучуки</option><option>Ароматика</option><option>Гликоли и оксиды</option></select>
-              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.55;font-size:12px">▼</span>
-            </div>
-          </div>
-          <div class="field"><label>Продукт / материал <span class="text-muted">(опционально)</span></label>
-            <input class="input" style="min-height:42px" placeholder="Например: Полипропилен ПП 1525 — оставьте пустым для всех">
-          </div>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;padding-top:2px">
-            <label onClick="{{ chkA.onClick }}" style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;user-select:none">
-              <span style="{{ chkA.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="{{ chkA.tick }}"><path d="M20 6 9 17l-5-5"/></svg></span>Сверять с эталоном (±3%)
-            </label>
-            <label onClick="{{ chkB.onClick }}" style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;user-select:none">
-              <span style="{{ chkB.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="{{ chkB.tick }}"><path d="M20 6 9 17l-5-5"/></svg></span>Продлевать формулы по сроку
-            </label>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px">
-          <button onClick="{{ goUpload }}" class="btn btn-secondary" style="height:44px;padding:0 18px;font-size:14px">← Назад</button>
-          <button onClick="{{ doCompute }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:46px;padding:0 30px;font-family:var(--font-heading);font-weight:600;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;gap:9px" style-hover="background:var(--action-600);border-color:var(--action-600)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9 18 6-6-6-6"/></svg>Рассчитать 4 812 строк
-          </button>
-        </div>
-      </div>
-    </div>
-    </sc-if>
 
     <!-- ═══════════ COMPUTING ═══════════ -->
     <sc-if value="{{ isComputing }}" hint-placeholder-val="{{ true }}">
@@ -373,9 +319,9 @@
             <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
             {{ sel.formulaText }}
           </div>
-          <sc-if value="{{ sel.isExtended }}" hint-placeholder-val="{{ false }}">
-            <div class="mono" style="font-size:11.5px;margin-top:8px;color:var(--st-ext);display:flex;align-items:center;gap:6px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Формула продлена по сроку до 31.07.2026 (исходный конец 30.06.2026)
+          <sc-if value="{{ sel.isExpired }}" hint-placeholder-val="{{ false }}">
+            <div class="mono" style="font-size:11.5px;margin-top:8px;color:var(--st-err);display:flex;align-items:center;gap:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Формула истекла 31.05.2026 — действующей формулы на период 06.2026 нет
             </div>
           </sc-if>
 
@@ -586,7 +532,7 @@ class Component extends DCLogic {
       selId: null, modal: false, modalPick: null,
       filter: 'all', query: '', sortKey: 'id', sortDir: 1,
       draft: '', draftErr: '', toast: '',
-      chkA: true, chkB: true, submitted: false, submittedAt: ''
+      chkA: true, submitted: false, submittedAt: ''
     };
   }
   componentWillUnmount(){ clearInterval(this.tick); clearTimeout(this.toastT); }
@@ -613,7 +559,7 @@ class Component extends DCLogic {
     const QUO = ['CPT_MOSCOW_PE','FOB_ROTTERDAM_PP','ICIS_STYRENE','PLATTS_BENZENE','DDP_NWE_PS','FCA_KAZAN_PP','CFR_CHINA_MEG'];
     const CUR = ['₽','₽','₽','$','€'];
     // status plan guarantees every type appears
-    const plan = {3:'no_formula',17:'no_formula',6:'missing_quote',22:'missing_quote',31:'missing_quote',4:'multi',12:'multi',27:'multi',38:'multi',9:'manual',20:'manual',14:'extended',25:'extended',34:'extended'};
+    const plan = {3:'no_formula',17:'no_formula',6:'missing_quote',22:'missing_quote',31:'missing_quote',4:'multi',12:'multi',27:'multi',38:'multi',9:'manual',20:'manual',14:'expired',25:'expired',34:'expired'};
     const rows = [];
     const fmt = (n,d=2)=> n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
     for (let i=0;i<42;i++){
@@ -655,7 +601,7 @@ class Component extends DCLogic {
         if (n===3) formulas.push(mkF('Ф-2025-'+(880+i),1.02,'спец. условие','01.01.2026 — 30.06.2026',false));
       }
       else if (status==='missing_quote') { formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'новая','01.06.2026 — 30.06.2026',true)); }
-      else if (status==='extended') { formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'продлена','01.04.2026 — 31.07.2026 (продл.)',false)); }
+      else if (status==='expired') { const ef=mkF('Ф-2026-'+(1400+i),0.98,'истекла','01.02.2026 — 31.05.2026 (истекла)',false); ef.result=null; ef.expired=true; formulas.push(ef); }
       else { formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'новая','01.06.2026 — 30.06.2026',false)); }
       const manualVal = status==='manual' ? Math.round(ref*(0.97+R()*0.06)) : null;
       rows.push({ id:'FR-'+String(60481+i), period:'06.2026', client, material:m[0], group:m[1], deal, cur, vol, ref, status, formulas, manualVal });
@@ -707,10 +653,10 @@ class Component extends DCLogic {
 
   statusMeta(v){
     const M = {
-      ok:['Посчитано','ok'], ext:['Продление','ext'], multi:['Выбрать формулу','multi'],
+      ok:['Посчитано','ok'], expired:['Формула истекла','err'], multi:['Выбрать формулу','multi'],
       manual:['Правка вручную','manual'], no_formula:['Нет цены','warn'], missing_quote:['Нет котировки','err']
     };
-    const key = v==='extended'?'ext':v;
+    const key = v;
     const e = M[key] || M.ok;
     const c = e[1];
     return { label:e[0],
@@ -739,8 +685,7 @@ class Component extends DCLogic {
     const ST = { fmt:this.fmt.bind(this) };
     const steps = [
       {k:'upload',n:'1',label:'Данные'},
-      {k:'params',n:'2',label:'Параметры'},
-      {k:'results',n:'3',label:'Результаты'}
+      {k:'results',n:'2',label:'Результаты'}
     ].map(x=>{
       const active = st.screen===x.k || (x.k==='results'&&st.screen==='computing');
       return { num:x.n, label:x.label,
@@ -823,8 +768,8 @@ class Component extends DCLogic {
 
     // filters
     const counts = { all:all.length };
-    ['ok','extended','multi','manual','no_formula','missing_quote'].forEach(k=> counts[k]= all.filter(r=> this.effStatus(r)===k).length);
-    const fdef = [['all','Все'],['ok','Посчитано'],['multi','Выбрать'],['no_formula','Нет цены'],['missing_quote','Нет котир.'],['manual','Правка'],['extended','Продление']];
+    ['ok','expired','multi','manual','no_formula','missing_quote'].forEach(k=> counts[k]= all.filter(r=> this.effStatus(r)===k).length);
+    const fdef = [['all','Все'],['ok','Посчитано'],['multi','Выбрать'],['no_formula','Нет цены'],['missing_quote','Нет котир.'],['manual','Правка'],['expired','Истекла']];
     const filters = fdef.map(f=>{
       const act = st.filter===f[0];
       return { label:f[1], count:counts[f[0]]||0,
@@ -870,7 +815,7 @@ class Component extends DCLogic {
       sel = { id:r.id, client:r.client, material:r.material, period:r.period, deal:r.deal, cur:r.cur, vol:this.fmt0(r.vol),
         statusLabel:m.label, chipStyle:m.chip, dotStyle:m.dot,
         noFormula: r.formulas.length===0, hasFormula: r.formulas.length>0,
-        formulaCode: f?f.code:'', formulaText: f?f.text:'', isExtended: r.status==='extended',
+        formulaCode: f?f.code:'', formulaText: f?f.text:'', isExpired: r.status==='expired',
         comps, hasMulti, multiCount: r.formulas.length,
         isManual, altFormulas,
         finalPrice: p==null?'нет цены':this.fmt(p)+' '+r.cur,
@@ -887,7 +832,6 @@ class Component extends DCLogic {
       tick:`opacity:${on?1:0};color:var(--color-bg)`
     });
     const chkA = mkChk(st.chkA, ()=> this.setState(s=>({chkA:!s.chkA})));
-    const chkB = mkChk(st.chkB, ()=> this.setState(s=>({chkB:!s.chkB})));
 
     // ── consolidated document ──
     const partStatusMeta = { joined:['Присоединено','ok'], draft:['Черновик','warn'], review:['На проверке','multi'] };
@@ -952,18 +896,18 @@ class Component extends DCLogic {
       themeIcon: st.theme==='light'?'◑':'◐',
       toggleTheme: ()=> this.setTheme(),
       steps,
-      isUpload: st.screen==='upload', isParams: st.screen==='params',
+      isUpload: st.screen==='upload',
       isComputing: st.screen==='computing', isResults: st.screen==='results',
       isConsolidated: st.screen==='consolidated',
       goConsolidated: ()=> this.goTo('consolidated'),
       consTabStyle:`display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border:1px solid ${st.screen==='consolidated'?'var(--color-accent)':'var(--color-divider)'};background:${st.screen==='consolidated'?'var(--color-accent-100)':'transparent'};color:var(--color-text);font-family:var(--font-heading);font-weight:600;font-size:13px;cursor:pointer`,
-      chkA, chkB,
+      chkA,
       parts, consKpis, consRows,
       submitted: st.submitted, notSubmitted: !st.submitted, submittedAt: st.submittedAt,
       saveMyPart: ()=>{ const d=new Date(); const at=('0'+d.getDate()).slice(-2)+'.07.2026, '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); this.setState({submitted:true, submittedAt:at}); this.fireToast('Ваш участок сохранён и присоединён к сводному документу'); },
       uploaded: st.uploaded, notUploaded: !st.uploaded,
       sources, refs, preview,
-      goUpload: ()=> this.goTo('upload'), goParams: ()=> this.goTo('params'),
+      goUpload: ()=> this.goTo('upload'),
       doLoad: ()=> this.doLoad(), doCompute: ()=> this.doCompute(),
       progressPct: Math.round(st.progress)+'%', progressRows: Math.round(4812*st.progress/100).toLocaleString('ru-RU'),
       kpis, filters, rows, noRows: rows.length===0,
