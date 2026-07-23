@@ -172,6 +172,27 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /calculations/{calculationId}/events:
+    get:
+      tags: [calculations]
+      operationId: streamCalculationProgress
+      summary: Поток прогресса расчёта (SSE)
+      description: |
+        Server-Sent Events поток прогресса расчёта. Каждое событие — JSON
+        `CalculationProgressEvent`. Поток завершается событием со `status: done`
+        (или `failed`). Клиент подписывается через EventSource.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Поток событий прогресса
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/CalculationProgressEvent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /calculations/{calculationId}/kpi:
     get:
       tags: [calculations]
@@ -683,6 +704,25 @@ components:
       type: object
       required: [processed_rows, total_rows, percent]
       properties:
+        processed_rows:
+          type: integer
+          example: 2406
+        total_rows:
+          type: integer
+          example: 4812
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 50
+
+    CalculationProgressEvent:
+      type: object
+      description: Событие SSE-потока прогресса расчёта
+      required: [status, processed_rows, total_rows, percent]
+      properties:
+        status:
+          $ref: '#/components/schemas/CalculationStatus'
         processed_rows:
           type: integer
           example: 2406
