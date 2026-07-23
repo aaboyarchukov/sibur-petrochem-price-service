@@ -3,8 +3,10 @@ import { ref, computed } from 'vue'
 import { useCalculationStore } from '@/stores/calculation'
 import { useToast } from '@/composables/useToast'
 import { formatPrice } from '@/lib/format'
+import type { MatchScope, SelectionReason } from '@/types'
 import AppDialog from '@/components/AppDialog.vue'
 import AppButton from '@/components/AppButton.vue'
+import StatusChip from '@/components/StatusChip.vue'
 
 const emit = defineEmits<{ close: [] }>()
 const calculation = useCalculationStore()
@@ -18,6 +20,19 @@ const currentSelected = computed(
   () => alternatives.value.find((a) => a.is_selected)?.formula_id ?? null,
 )
 const pick = ref<string | null>(currentSelected.value)
+
+const SCOPE_LABELS: Record<MatchScope, string> = {
+  material: 'по материалу',
+  group_m: 'через группу M',
+}
+
+const REASON_LABELS: Record<SelectionReason, string> = {
+  actual_successful: 'актуальная успешная',
+  latest_expired_successful: 'последняя из просроченных успешных',
+  technical_tie_break: 'технический выбор по мин. formula_id',
+  no_successful: 'ни одна не посчиталась',
+  user_selected: 'выбрана пользователем',
+}
 
 async function confirm(): Promise<void> {
   if (row.value && pick.value) {
@@ -56,16 +71,29 @@ async function confirm(): Promise<void> {
               <span class="radio" :data-on="pick === a.formula_id" />
               <span class="mono code">{{ a.formula_id }}</span>
               <span class="mono tag">{{ a.is_actual ? 'актуальная' : 'просроченная' }}</span>
+              <StatusChip v-if="a.status" :status="a.status" />
             </div>
-            <div class="mono validity">Действует: {{ a.valid_from }} — {{ a.valid_to }}</div>
+            <div class="mono validity">
+              Действует: {{ a.valid_from }} — {{ a.valid_to }}
+              <template v-if="a.created_on"> · создана {{ a.created_on }}</template>
+            </div>
+            <div class="mono validity">
+              <template v-if="a.match_scope">Подбор: {{ SCOPE_LABELS[a.match_scope] }}</template>
+              <template v-if="a.selection_reason"> · {{ REASON_LABELS[a.selection_reason] }}</template>
+              <template v-if="(a.equal_priority_count ?? 0) > 1">
+                · равноприоритетных: {{ a.equal_priority_count }}
+              </template>
+            </div>
             <div class="mono expr">{{ a.formula_text }}</div>
+            <div v-if="a.warning" class="mono note warn">⚠ {{ a.warning }}</div>
+            <div v-if="a.calc_error" class="mono note error">✕ {{ a.calc_error }}</div>
           </div>
           <div class="card-price">
-            <div class="mono price" :data-matched="a.matched">
+            <div class="mono price">
               {{ a.price == null ? 'нет цены' : formatPrice(a.price, row.currency) }}
             </div>
-            <div class="mono match" :data-matched="a.matched">
-              {{ a.price == null ? '—' : a.matched ? '±3% ✓' : '>3%' }}
+            <div v-if="a.price_formula_currency != null && a.formula_currency" class="mono in-currency">
+              {{ formatPrice(a.price_formula_currency, a.formula_currency) }}
             </div>
           </div>
         </div>
@@ -175,15 +203,19 @@ async function confirm(): Promise<void> {
   font-size: 18px;
   font-weight: 600;
 }
-.price[data-matched='true'] {
-  color: var(--st-ok);
-}
-.match {
+.in-currency {
   font-size: 10.5px;
-  color: var(--st-multi);
+  opacity: 0.65;
 }
-.match[data-matched='true'] {
-  color: var(--st-ok);
+.note {
+  font-size: 11px;
+  margin: 6px 0 0 22px;
+}
+.note.warn {
+  color: var(--st-warn);
+}
+.note.error {
+  color: var(--bad);
 }
 .actions {
   display: flex;

@@ -71,6 +71,15 @@ const CLIENTS: [string, string][] = [
 const CURRENCIES = ['RUB', 'RUB', 'RUB', 'USD', 'RUB']
 const QUOTES = ['CPT_MOSCOW_109', 'CFR_TUR_CURRENT', 'CFR_CHINA', 'SPOT_FOB_NEASIA', 'ICIS_STYRENE']
 
+// Имена котировок из quote_mapping (техимя → человекочитаемое имя).
+const QUOTE_NAMES: Record<string, string> = {
+  CPT_MOSCOW_109: 'PP raffia CPT Moscow',
+  CFR_TUR_CURRENT: 'PE film CFR Turkey current',
+  CFR_CHINA: 'PP homo CFR China',
+  SPOT_FOB_NEASIA: 'Styrene spot FOB NE Asia',
+  ICIS_STYRENE: 'ICIS Styrene Europe',
+}
+
 // План статусов: гарантирует присутствие каждого RowStatus в наборе.
 const STATUS_PLAN: Record<number, RowStatus> = {
   3: 'no_formula',
@@ -107,6 +116,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: missing ? 'error' : 'ok',
       value: missing ? null : 1408,
       source: 'quotes.csv',
+      quote_name: QUOTE_NAMES[quote] ?? quote,
       quote_code: 938751651,
       value_date: missing ? null : '2026-05-01',
       version_type: missing ? null : 'Факт',
@@ -121,6 +131,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: 'ok',
       value: 3650,
       source: 'formula_components.csv',
+      quote_name: null,
       quote_code: null,
       value_date: null,
       version_type: null,
@@ -135,6 +146,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: 'ok',
       value: 0.8906,
       source: 'formula_components.csv',
+      quote_name: null,
       quote_code: null,
       value_date: null,
       version_type: null,
@@ -149,6 +161,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: 'ok',
       value: 0.7154,
       source: 'formula_components.csv',
+      quote_name: null,
       quote_code: null,
       value_date: null,
       version_type: null,
@@ -163,6 +176,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: 'ok',
       value: 98728.12,
       source: 'formula_components.csv',
+      quote_name: null,
       quote_code: null,
       value_date: null,
       version_type: null,
@@ -179,6 +193,7 @@ function makeComponents(quote: string, currency: string, missing: boolean): Form
       status: 'ok',
       value: 89.42,
       source: 'currency_rates.csv',
+      quote_name: null,
       quote_code: null,
       value_date: '2026-06-15',
       version_type: 'Факт',

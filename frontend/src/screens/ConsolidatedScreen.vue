@@ -26,15 +26,17 @@ const PART_META: Record<PartStatus, { label: string; kind: string }> = {
   draft: { label: 'Черновик', kind: 'warn' },
 }
 
+// Канонические KPI сводного документа (documents/кпэ_для_отображения.md).
 const kpiCards = computed(() => {
-  const k = doc.value?.kpi
-  if (!k) return []
+  const d = doc.value
+  const k = d?.kpi
+  if (!d || !k) return []
   const col = (v: number, g: number, m: number) =>
     v >= g ? 'var(--good)' : v >= m ? 'var(--mid)' : 'var(--bad)'
   return [
-    { label: 'Всего строк в документе', value: String(k.total_rows), sub: 'из всех участков', color: 'var(--color-accent)', bar: '100%' },
-    { label: 'Строк с ценой', value: `${k.priced_pct}%`, sub: `${k.priced_rows} строк`, color: col(k.priced_pct, 90, 75), bar: `${k.priced_pct}%` },
-    { label: 'Совпало ±3%', value: `${k.matched_pct ?? 0}%`, sub: `${k.matched_rows ?? 0} строк`, color: col(k.matched_pct ?? 0, 85, 70), bar: `${k.matched_pct ?? 0}%` },
+    { label: 'Всего строк в документе', value: String(d.total_rows), sub: 'из всех участков', color: 'var(--color-accent)', bar: '100%' },
+    { label: 'Покрытие формулами', value: `${k.formula_coverage_pct}%`, sub: 'строк Formula', color: col(k.formula_coverage_pct, 90, 75), bar: `${k.formula_coverage_pct}%` },
+    { label: 'Контрольная сумма', value: `${formatNumber(k.control_sum_mln, 1)} млн ₽`, sub: 'Σ цена × объём', color: 'var(--color-accent)', bar: '100%' },
   ]
 })
 

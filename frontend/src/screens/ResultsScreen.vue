@@ -34,39 +34,50 @@ watch(searchInput, (value) => {
   }, 200)
 })
 
+// Пять канонических KPI (documents/кпэ_для_отображения.md).
 const kpiCards = computed(() => {
   const k = calculation.kpi
   if (!k) return []
   const col = (v: number, good: number, mid: number) =>
     v >= good ? 'var(--good)' : v >= mid ? 'var(--mid)' : 'var(--bad)'
+  // Для «плохих» процентов шкала обратная: чем меньше, тем лучше.
+  const colInverse = (v: number, good: number, mid: number) =>
+    v <= good ? 'var(--good)' : v <= mid ? 'var(--mid)' : 'var(--bad)'
   return [
     {
-      label: 'Строк с ценой',
-      value: `${k.priced_pct}%`,
-      sub: `${k.priced_rows} из ${k.total_rows}`,
-      color: col(k.priced_pct, 90, 75),
-      bar: `${k.priced_pct}%`,
+      label: 'Покрытие формулами',
+      value: `${k.formula_coverage_pct}%`,
+      sub: 'строк Formula',
+      color: col(k.formula_coverage_pct, 90, 75),
+      bar: `${k.formula_coverage_pct}%`,
     },
     {
-      label: 'Совпало с эталоном ±3%',
-      value: `${k.matched_pct ?? 0}%`,
-      sub: `${k.matched_rows ?? 0} строк`,
-      color: col(k.matched_pct ?? 0, 85, 70),
-      bar: `${k.matched_pct ?? 0}%`,
+      label: 'Формул без ошибок',
+      value: `${k.formulas_ok_pct}%`,
+      sub: 'все кандидаты посчитаны',
+      color: col(k.formulas_ok_pct, 90, 75),
+      bar: `${k.formulas_ok_pct}%`,
     },
     {
-      label: 'Ошибок по строкам',
-      value: String(k.error_rows),
-      sub: 'требуют внимания',
-      color: k.error_rows === 0 ? 'var(--good)' : k.error_rows <= 4 ? 'var(--mid)' : 'var(--bad)',
-      bar: `${Math.min(100, k.error_rows * 12)}%`,
+      label: 'Строк с ошибкой расчёта',
+      value: String(k.calc_error_rows),
+      sub: 'формула есть, цены нет',
+      color: k.calc_error_rows === 0 ? 'var(--good)' : k.calc_error_rows <= 4 ? 'var(--mid)' : 'var(--bad)',
+      bar: `${Math.min(100, k.calc_error_rows * 12)}%`,
     },
     {
-      label: 'Прогресс расчёта',
-      value: '100%',
-      sub: `${k.total_rows} строк`,
-      color: 'var(--good)',
+      label: 'Контрольная сумма',
+      value: `${formatNumber(k.control_sum_mln, 1)} млн ₽`,
+      sub: 'Σ цена × объём',
+      color: 'var(--color-accent)',
       bar: '100%',
+    },
+    {
+      label: 'Непонятных ошибок',
+      value: `${k.unclassified_error_pct}%`,
+      sub: 'вне классификатора',
+      color: colInverse(k.unclassified_error_pct, 5, 15),
+      bar: `${k.unclassified_error_pct}%`,
     },
   ]
 })
@@ -156,9 +167,10 @@ function saveMyPart(): void {
       <div class="table-scroll">
         <table class="table results-table">
           <colgroup>
-            <col style="width: 88px" /><col style="width: 78px" /><col style="width: 18%" />
-            <col style="width: 22%" /><col style="width: 90px" /><col style="width: 60px" />
-            <col style="width: 100px" /><col style="width: 172px" /><col style="width: 150px" />
+            <col style="width: 88px" /><col style="width: 78px" /><col style="width: 16%" />
+            <col style="width: 20%" /><col style="width: 90px" /><col style="width: 60px" />
+            <col style="width: 96px" /><col style="width: 168px" /><col style="width: 62px" />
+            <col style="width: 44px" /><col style="width: 144px" />
           </colgroup>
           <thead>
             <tr>
@@ -170,6 +182,8 @@ function saveMyPart(): void {
               <th>вал.</th>
               <th class="num sortable" @click="calculation.setSort('volume')">объём, т{{ sortIndicator('volume') }}</th>
               <th>статус подбора</th>
+              <th class="num">канд.</th>
+              <th title="предупреждение">⚠</th>
               <th class="num sortable" @click="calculation.setSort('price')">итоговая цена{{ sortIndicator('price') }}</th>
             </tr>
           </thead>
@@ -191,7 +205,11 @@ function saveMyPart(): void {
               <td class="mono">{{ row.currency }}</td>
               <td class="mono num">{{ formatInt(row.volume) }}</td>
               <td><StatusChip :status="row.status" /></td>
-              <td class="mono num price" :data-matched="row.matched">
+              <td class="mono num">{{ row.candidate_count ?? 0 }}</td>
+              <td>
+                <span v-if="row.warning" class="warn-icon" :title="row.warning">⚠</span>
+              </td>
+              <td class="mono num price">
                 {{ row.final_price == null ? 'нет цены' : formatNumber(row.final_price) }}
               </td>
             </tr>
@@ -223,7 +241,7 @@ function saveMyPart(): void {
 }
 .kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   padding: 14px 16px 4px;
   flex: none;
@@ -293,7 +311,7 @@ function saveMyPart(): void {
 }
 .results-table {
   table-layout: fixed;
-  min-width: 1040px;
+  min-width: 1140px;
 }
 .results-table thead th {
   position: sticky;
@@ -336,8 +354,9 @@ function saveMyPart(): void {
   font-size: 13.5px;
   font-weight: 600;
 }
-.price[data-matched='true'] {
-  color: var(--st-ok);
+.warn-icon {
+  color: var(--st-warn);
+  cursor: help;
 }
 .empty-rows {
   text-align: center;
