@@ -20,6 +20,9 @@ const AnalystName = "А. Смирнов"
 
 const partName = "Ваш участок"
 
+// AllPeriods — расчёт по всему горизонту спроса (без фильтра по месяцу).
+const AllPeriods = "all"
+
 // SourcesLoader — источники расчёта (реализация — repository/postgres).
 type SourcesLoader interface {
 	LoadSources(ctx context.Context) (domain.Sources, error)
@@ -64,7 +67,8 @@ func (s *Service) Reset() {
 	s.order = nil
 }
 
-// Create — загрузка источников, прогон движка за период, регистрация расчёта.
+// Create — загрузка источников, прогон движка, регистрация расчёта.
+// period == AllPeriods — весь горизонт спроса; иначе фильтр по месяцу (YYYY-MM).
 // Расчёт синхронный (сотни-тысячи строк за доли секунды); контрактный статус — done.
 func (s *Service) Create(ctx context.Context, period string) (Info, error) {
 	src, err := s.loader.LoadSources(ctx)
@@ -72,16 +76,12 @@ func (s *Service) Create(ctx context.Context, period string) (Info, error) {
 		return Info{}, fmt.Errorf("load sources: %w", err)
 	}
 
-	filtered := make([]domain.SspRow, 0, len(src.Ssp))
-	for _, row := range src.Ssp {
-		if row.Period.Format("2006-01") == period {
-			filtered = append(filtered, row)
-		}
+	if period != AllPeriods {
+		src.Ssp = filterByPeriod(src.Ssp, period)
 	}
-	if len(filtered) == 0 {
+	if len(src.Ssp) == 0 {
 		return Info{}, fmt.Errorf("%w: нет строк спроса за период %s", domain.ErrSourcesNotLoaded, period)
 	}
-	src.Ssp = filtered
 
 	calc := &calculation{
 		id:        uuid.NewString(),
@@ -99,6 +99,18 @@ func (s *Service) Create(ctx context.Context, period string) (Info, error) {
 	s.mu.Unlock()
 
 	return calc.info(), nil
+}
+
+// filterByPeriod — строки спроса за месяц period (формат YYYY-MM).
+func filterByPeriod(rows []domain.SspRow, period string) []domain.SspRow {
+	filtered := make([]domain.SspRow, 0, len(rows))
+	for _, row := range rows {
+		if row.Period.Format("2006-01") == period {
+			filtered = append(filtered, row)
+		}
+	}
+
+	return filtered
 }
 
 func (s *Service) Get(id string) (Info, error) {

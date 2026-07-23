@@ -1,0 +1,17 @@
+# Локальная конфигурация для запуска бэкенда вне docker (go run . -cfg ./configs/local.yaml).
+# env-переменные перекрывают эти значения; в контейнере используется флаг -env-only.
+
+postgres:
+  user: sibur
+  password: change_me
+  name: sibur
+  host: localhost
+  port: "5432"
+  sslmode: disable
+  max_conns: 25
+  min_conns: 5
+
+server:
+  addr: ":8080"
+  read_header_timeout: 5s
+  shutdown_timeout: 10s

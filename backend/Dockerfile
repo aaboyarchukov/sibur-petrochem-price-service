@@ -14,4 +14,5 @@ WORKDIR /app
 COPY --from=builder /app/api .
 
 EXPOSE 8080
-ENTRYPOINT ["/app/api"]
+# -env-only: конфигурация целиком из переменных окружения (yaml-файла в образе нет)
+ENTRYPOINT ["/app/api", "-env-only"]

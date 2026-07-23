@@ -4,7 +4,8 @@ import type { ConsolidatedDocument } from '@/types'
 import { usePricingApi } from '@/services/provide'
 import { useCalculationStore } from '@/stores/calculation'
 
-const PERIOD = '2026-06'
+// Сводный документ по всему горизонту спроса (расчёт ведётся за все периоды).
+const PERIOD = 'all'
 
 export const useConsolidatedStore = defineStore('consolidated', () => {
   const api = usePricingApi()

@@ -81,7 +81,7 @@ async function reset(): Promise<void> {
 async function compute(): Promise<void> {
   computeError.value = ''
   try {
-    await calculation.start('2026-06')
+    await calculation.start('all')
     await router.push({ name: 'computing' })
   } catch (e) {
     // 409 sources_not_loaded и прочие ошибки запуска

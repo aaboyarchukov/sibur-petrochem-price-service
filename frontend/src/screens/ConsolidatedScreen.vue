@@ -60,8 +60,8 @@ async function exportExcel(): Promise<void> {
     <div class="wrap">
       <header class="head">
         <div>
-          <div class="mono eyebrow">Расчётный период · Июнь 2026</div>
-          <h2>Сводный документ за период</h2>
+          <div class="mono eyebrow">Расчётный горизонт · все периоды</div>
+          <h2>Сводный документ по всем периодам</h2>
         </div>
         <AppButton variant="action" @click="exportExcel">Выгрузить весь документ</AppButton>
       </header>
