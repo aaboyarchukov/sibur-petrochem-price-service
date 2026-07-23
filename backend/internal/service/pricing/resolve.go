@@ -10,15 +10,30 @@ import (
 	"sibur-petrochem-price-service/internal/domain"
 )
 
+// Валюты расчёта: рубль — базовая, остальные конвертируются курсом.
+const (
+	currencyRUB = "RUB"
+	currencyUSD = "USD"
+	currencyEUR = "EUR"
+	currencyCNY = "CNY"
+)
+
+// Типы версий котировок и курсов (каскад Факт → ОФ → ППР).
+const (
+	versionFact = "Факт"
+	versionOF   = "ОФ"
+	versionPPR  = "ППР"
+)
+
 // Константные типы термов (значение берётся из состава формулы).
 var constantTypes = map[string]bool{"H": true, "A": true, "B": true, "C": true, "D": true, "E": true}
 
 // currencyTermMap — технические ZF-идентификаторы валютных термов (как в эталоне).
 var currencyTermMap = map[string][]string{
-	"ZF0000000000000002": {"single", "USD"},
-	"ZF0000000000000003": {"single", "EUR"},
-	"ZF0000000000000024": {"single", "CNY"},
-	"ZF0000000000000012": {"cross", "USD", "CNY"}, // CNY за 1 USD
+	"ZF0000000000000002": {"single", currencyUSD},
+	"ZF0000000000000003": {"single", currencyEUR},
+	"ZF0000000000000024": {"single", currencyCNY},
+	"ZF0000000000000012": {"cross", currencyUSD, currencyCNY}, // CNY за 1 USD
 }
 
 func versionRank(versionType string) int {
@@ -29,11 +44,11 @@ func versionRank(versionType string) int {
 		rankUnknown = 99
 	)
 	switch versionType {
-	case "Факт":
+	case versionFact:
 		return rankFact
-	case "ОФ":
+	case versionOF:
 		return rankOF
-	case "ППР":
+	case versionPPR:
 		return rankPPR
 	default:
 		return rankUnknown
@@ -138,7 +153,7 @@ func resolveQuote(component domain.FormulaComponent, period time.Time, idx *inde
 
 func resolveRate(currency string, period time.Time, idx *indexes) (float64, rateInfo, error) {
 	currency = strings.ToUpper(strings.TrimSpace(currency))
-	if currency == "RUB" {
+	if currency == currencyRUB {
 		return 1, rateInfo{Date: period, VersionType: "identity", GapDays: 0}, nil
 	}
 
@@ -174,7 +189,7 @@ func resolveCurrencyComponent(component domain.FormulaComponent, period time.Tim
 	variable := strings.ToUpper(strings.TrimSpace(component.VarName))
 	explicit := strings.ToUpper(strings.TrimSpace(component.Currency))
 
-	if explicit != "" && (explicit == "RUB" || len(idx.ratesByCurrency[explicit]) > 0) {
+	if explicit != "" && (explicit == currencyRUB || len(idx.ratesByCurrency[explicit]) > 0) {
 		return resolveRate(explicit, period, idx)
 	}
 
@@ -182,7 +197,7 @@ func resolveCurrencyComponent(component domain.FormulaComponent, period time.Tim
 		return resolveTechnicalTerm(mapping, period, idx)
 	}
 
-	if variable == "USD" || variable == "EUR" || variable == "CNY" || variable == "RUB" {
+	if variable == currencyUSD || variable == currencyEUR || variable == currencyCNY || variable == currencyRUB {
 		return resolveRate(variable, period, idx)
 	}
 
