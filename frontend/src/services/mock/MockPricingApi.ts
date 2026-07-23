@@ -13,6 +13,7 @@ import type {
   ConsolidatedRow,
   RowsQuery,
   RowStatus,
+  SelectionReason,
   ParsedFormula,
   AlternativeFormula,
 } from '@/types'
@@ -32,6 +33,12 @@ const CALC_ID = 'calc-mine'
 const TOLERANCE = 0.03
 const PROGRESS_STEP_MS = 130
 
+// Курсы к RUB для контрольной суммы (фиксированные mock-курсы датасета).
+const RUB_RATES: Record<string, number> = { RUB: 1, USD: 89.42 }
+
+// Классифицированные ошибки канона (FORMULA_NOT_FOUND, COMPONENT_ERROR, INVALID_FORMULA).
+const CLASSIFIED_ERRORS = new Set<RowStatus>(['no_formula', 'component_error', 'invalid_formula'])
+
 export class MockPricingApi implements PricingApi {
   private rows: RowRecord[] = buildRows()
   private sources: Source[] = buildSources()
@@ -45,7 +52,34 @@ export class MockPricingApi implements PricingApi {
   }
 
   async loadDemoData(): Promise<Source[]> {
+    // демо-активация помечает пользовательские источники загруженными
+    for (const source of this.sources) {
+      if (source.kind === 'uploaded') source.uploaded_at = new Date().toISOString()
+    }
     return structuredClone(this.sources)
+  }
+
+  async uploadSource(key: string, file: File): Promise<Source> {
+    const found = this.sources.find((s) => s.key === key)
+    if (!found) throw new Error(`неизвестный источник: ${key}`)
+    found.file_name = file.name
+    found.uploaded_at = new Date().toISOString()
+    return structuredClone(found)
+  }
+
+  async resetSources(): Promise<Source[]> {
+    for (const source of this.sources) {
+      if (source.kind === 'uploaded') source.uploaded_at = null
+    }
+    this.manual.clear()
+    this.selected.clear()
+    this.submitted = false
+    return structuredClone(this.sources)
+  }
+
+  streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe {
+    onCount(3) // детерминированный mock: без backend присутствие не отслеживается
+    return () => undefined
   }
 
   async previewSource(_key: string, limit = 5): Promise<SourcePreview> {
@@ -228,22 +262,32 @@ export class MockPricingApi implements PricingApi {
   private toDetails(r: RowRecord): RowDetails {
     const active = this.activeCandidate(r)
     const manual = this.manual.get(r.row_id) ?? null
-    const alternatives: AlternativeFormula[] = r.candidates.map((c) => ({
-      formula_id: c.formula_id,
-      formula_text: c.formula_text,
-      match_scope: c.match_scope,
-      valid_from: c.valid_from,
-      valid_to: c.valid_to,
-      created_on: c.created_on,
-      is_actual: c.is_actual,
-      price: c.price,
-      calc_error: c.calc_error,
-      matched:
-        c.price != null && r.reference_price != null
-          ? Math.abs(c.price - r.reference_price) / r.reference_price <= TOLERANCE
-          : null,
-      is_selected: active != null && c.formula_id === active.formula_id,
-    }))
+    const equalPriority = r.base_status === 'formula_conflict' ? r.candidates.length : 0
+    const alternatives: AlternativeFormula[] = r.candidates.map((c) => {
+      const isSelected = active != null && c.formula_id === active.formula_id
+      return {
+        formula_id: c.formula_id,
+        formula_text: c.formula_text,
+        match_scope: c.match_scope,
+        valid_from: c.valid_from,
+        valid_to: c.valid_to,
+        created_on: c.created_on,
+        is_actual: c.is_actual,
+        price: c.price,
+        formula_currency: c.formula_currency,
+        price_formula_currency: c.price,
+        status: this.candidateStatus(c),
+        selection_reason: isSelected ? this.selectionReason(r, c) : undefined,
+        equal_priority_count: equalPriority,
+        warning: this.candidateWarning(c),
+        calc_error: c.calc_error,
+        matched:
+          c.price != null && r.reference_price != null
+            ? Math.abs(c.price - r.reference_price) / r.reference_price <= TOLERANCE
+            : null,
+        is_selected: isSelected,
+      }
+    })
 
     return {
       row: this.toRow(r),
@@ -260,11 +304,7 @@ export class MockPricingApi implements PricingApi {
             created_on: active.created_on,
             is_actual: active.is_actual,
             is_extended: active.is_extended,
-            selection_reason: this.selected.has(r.row_id)
-              ? 'user_selected'
-              : active.is_extended
-                ? 'latest_expired_successful'
-                : 'actual_successful',
+            selection_reason: this.selectionReason(r, active),
           }
         : undefined,
       components: active ? active.components : [],
@@ -280,26 +320,78 @@ export class MockPricingApi implements PricingApi {
               version_type: 'Факт',
             }
           : undefined,
-      equal_priority_count: r.base_status === 'formula_conflict' ? r.candidates.length : 0,
+      equal_priority_count: equalPriority,
       manual_price: manual,
       reference_price: r.reference_price,
     }
   }
 
+  // Статус кандидата в терминах эталонного алгоритма (для KPI и экрана формул).
+  private candidateStatus(c: FormulaCandidate): RowStatus {
+    if (c.calc_error) return 'invalid_formula'
+    if (c.price == null) return 'component_error'
+    if (c.is_extended) return 'calculated_expired'
+    return 'calculated'
+  }
+
+  private candidateWarning(c: FormulaCandidate): string | null {
+    return c.is_extended ? 'использована просроченная формула, срок продлён' : null
+  }
+
+  // Причина выбора применённого кандидата (в терминах эталонного алгоритма).
+  private selectionReason(r: RowRecord, c: FormulaCandidate): SelectionReason {
+    if (this.selected.has(r.row_id)) return 'user_selected'
+    if (r.base_status === 'formula_conflict') return 'technical_tie_break'
+    if (c.is_extended) return 'latest_expired_successful'
+    if (c.price == null) return 'no_successful'
+    return 'actual_successful'
+  }
+
+  // Пять канонических KPI из documents/кпэ_для_отображения.md.
   private computeKpi(records: RowRecord[]): Kpi {
-    const priced = records.filter((r) => this.effPrice(r) != null)
-    const matched = records.filter((r) => this.isMatched(r) === true)
-    const errors = records.filter((r) => {
+    const pct = (part: number, total: number) => (total ? Math.round((part / total) * 100) : 0)
+
+    // % покрытия формулами: только строки Formula, SPOT исключён.
+    const formulaRows = records.filter((r) => r.deal_type === 'Formula')
+    const covered = formulaRows.filter((r) => r.candidates.length > 0)
+
+    // % формул без ошибок: formula_id, у которых все кандидаты CALCULATED.
+    const formulaOk = new Map<string, boolean>()
+    for (const r of records) {
+      for (const c of r.candidates) {
+        const ok = this.candidateStatus(c) === 'calculated'
+        formulaOk.set(c.formula_id, (formulaOk.get(c.formula_id) ?? true) && ok)
+      }
+    }
+    const okCount = [...formulaOk.values()].filter(Boolean).length
+
+    // Строки с ошибкой расчёта: формула найдена, но цена не получена.
+    const calcErrors = formulaRows.filter((r) => {
       const s = this.effStatus(r)
-      return s === 'component_error' || s === 'no_formula' || s === 'invalid_formula'
+      return (
+        r.candidates.length > 0 &&
+        this.effPrice(r) == null &&
+        (s === 'component_error' || s === 'invalid_formula')
+      )
     })
+
+    // Контрольная сумма: Σ price × forecast × курс_к_RUB / 1e6.
+    const controlSum = records.reduce((sum, r) => {
+      const price = this.effPrice(r)
+      if (price == null || r.volume == null) return sum
+      return sum + price * r.volume * (RUB_RATES[r.currency] ?? 1)
+    }, 0)
+
+    // % непонятных ошибок: ошибки вне классификатора {no_formula, component_error, invalid_formula}.
+    const errorRows = records.filter((r) => this.rowError(r) != null || CLASSIFIED_ERRORS.has(this.effStatus(r)))
+    const unclassified = errorRows.filter((r) => !CLASSIFIED_ERRORS.has(this.effStatus(r)))
+
     return {
-      total_rows: records.length,
-      priced_rows: priced.length,
-      priced_pct: records.length ? Math.round((priced.length / records.length) * 100) : 0,
-      matched_rows: matched.length,
-      matched_pct: priced.length ? Math.round((matched.length / priced.length) * 100) : 0,
-      error_rows: errors.length,
+      formula_coverage_pct: pct(covered.length, formulaRows.length),
+      formulas_ok_pct: pct(okCount, formulaOk.size),
+      calc_error_rows: calcErrors.length,
+      control_sum_mln: controlSum / 1_000_000,
+      unclassified_error_pct: pct(unclassified.length, errorRows.length),
     }
   }
 

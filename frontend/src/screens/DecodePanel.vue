@@ -119,7 +119,10 @@ async function resetManual(): Promise<void> {
           <BlueprintPanel class="components">
             <table class="table components-table">
               <thead>
-                <tr><th>перем.</th><th>тип</th><th class="num">значение</th><th>источник · дата</th></tr>
+                <tr>
+                  <th>перем.</th><th>тип</th><th class="num">значение</th>
+                  <th>котировка</th><th>источник · дата</th>
+                </tr>
               </thead>
               <tbody>
                 <tr v-for="(c, i) in details?.components ?? []" :key="i">
@@ -128,11 +131,13 @@ async function resetManual(): Promise<void> {
                   <td class="mono num" :data-error="c.status === 'error'">
                     {{ c.value == null ? '— нет' : formatNumber(c.value, 4) }}
                   </td>
+                  <td class="quote-name">{{ c.quote_name ?? '—' }}</td>
                   <td class="source">
                     <div>{{ c.source }}</div>
                     <div class="mono text-muted">
                       {{ c.error ?? (c.value_date ? `${c.value_date}${c.version_type ? ' · ' + c.version_type : ''}` : '—') }}
                     </div>
+                    <div v-if="c.warning" class="mono comp-warning">⚠ {{ c.warning }}</div>
                   </td>
                 </tr>
               </tbody>
@@ -188,18 +193,24 @@ async function resetManual(): Promise<void> {
 
 <style scoped>
 .backdrop {
-  position: absolute;
+  /* fixed: окно не листается вместе с экраном под ним */
+  position: fixed;
   inset: 0;
   background: rgba(0, 20, 25, 0.42);
   display: flex;
   justify-content: flex-end;
   z-index: 35;
+  overscroll-behavior: contain;
 }
 .panel {
-  width: min(600px, 94vw);
+  width: min(780px, 94vw);
+  /* строго в высоту экрана: шапка и футер с ценой зафиксированы, скроллится только тело */
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 .head {
   padding: 14px 18px;
@@ -313,6 +324,13 @@ async function resetManual(): Promise<void> {
 .source {
   font-size: 11px;
   line-height: 1.35;
+}
+.quote-name {
+  font-size: 11px;
+  line-height: 1.35;
+}
+.comp-warning {
+  color: var(--st-warn);
 }
 .no-formula {
   padding: 16px;

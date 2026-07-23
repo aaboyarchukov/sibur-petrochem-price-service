@@ -27,6 +27,9 @@ describe('DecodePanel', () => {
     expect(wrapper.text()).toContain('Применённая формула')
     // хотя бы один компонент отрисован
     expect(wrapper.findAll('.components-table tbody tr').length).toBeGreaterThan(0)
+    // у компонента-котировки выведено имя котировки
+    const quoteNames = wrapper.findAll('.quote-name').map((c) => c.text())
+    expect(quoteNames.some((t) => t !== '—')).toBe(true)
   })
 
   it('показывает сообщение об отсутствии формулы для no_formula', async () => {

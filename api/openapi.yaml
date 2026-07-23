@@ -33,6 +33,8 @@ tags:
     description: Сводный документ за период — участки аналитиков
   - name: formulas
     description: Работа с выражениями формул — парсинг и валидация
+  - name: presence
+    description: Присутствие аналитиков — количество онлайн в реальном времени
 
 paths:
 
@@ -49,6 +51,54 @@ paths:
       responses:
         '200':
           description: Список источников
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+
+  /sources/demo:
+    post:
+      tags: [sources]
+      operationId: loadDemoSources
+      summary: Активировать демо-набор источников
+      description: |
+        Помечает пользовательские источники (`ssp`, `formulas`) загруженными
+        демо-данными из seed-миграций — без передачи файлов. После вызова
+        расчёт разрешён. Кнопка в UI показывается по флагу сборки.
+      responses:
+        '200':
+          description: Демо-набор активирован
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+
+  /sources/reset:
+    post:
+      tags: [sources]
+      operationId: resetSources
+      summary: Сбросить загрузку источников
+      description: |
+        Возвращает приложение в начальное состояние: снимает отметки загрузки
+        пользовательских источников (`uploaded_at`), удаляет все расчёты
+        текущей сессии (включая ручные правки и присоединённые участки).
+        Данные таблиц не очищаются — повторная загрузка файла или активация
+        демо-набора снова разрешают расчёт.
+      responses:
+        '200':
+          description: Состояние сброшено
           content:
             application/json:
               schema:
@@ -418,6 +468,27 @@ paths:
 
   # ─────────────────────────── FORMULAS ───────────────────────────
 
+  /presence/events:
+    get:
+      tags: [presence]
+      operationId: streamPresence
+      summary: Поток присутствия аналитиков (SSE)
+      description: |
+        Server-Sent Events поток количества аналитиков онлайн. Каждое открытое
+        соединение считается одним аналитиком (MVP без аутентификации).
+        Событие `PresenceEvent` приходит при подключении и при каждом изменении
+        числа подключений; периодически шлётся keep-alive комментарий.
+
+        Реализуется вне strict-сервера (нужен незабуференный flush долгоживущего
+        потока), поэтому исключён из кодогенерации (`exclude-operation-ids`).
+      responses:
+        '200':
+          description: Поток событий присутствия
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/PresenceEvent'
+
   /formulas/parse:
     post:
       tags: [formulas]
@@ -735,31 +806,54 @@ components:
           maximum: 100
           example: 50
 
+    PresenceEvent:
+      type: object
+      description: Событие SSE-потока присутствия — число аналитиков онлайн
+      required: [analysts_online]
+      properties:
+        analysts_online:
+          type: integer
+          minimum: 0
+          example: 3
+
     Kpi:
       type: object
-      description: Сводные показатели качества расчёта
-      required: [total_rows, priced_rows, priced_pct, error_rows]
+      description: |
+        Пять канонических KPI отображения (documents/кпэ_для_отображения.md).
+        Метрика «совпало с эталоном ±3%» — вне UI-канона и в KPI не входит.
+      required:
+        - formula_coverage_pct
+        - formulas_ok_pct
+        - calc_error_rows
+        - control_sum_mln
+        - unclassified_error_pct
       properties:
-        total_rows:
+        formula_coverage_pct:
           type: integer
-          description: Всего строк в расчёте
-        priced_rows:
+          description: >-
+            % покрытия формулами строк спроса: строки Formula с candidate_count > 0
+            среди всех строк Formula (SPOT исключается)
+        formulas_ok_pct:
           type: integer
-          description: Строк с посчитанной ценой
-        priced_pct:
+          description: >-
+            % формул, которые вычисляются без ошибок: formula_id, у которых все
+            кандидаты CALCULATED, среди всех найденных formula_id
+        calc_error_rows:
           type: integer
-          description: Доля строк с ценой, %
-        matched_rows:
+          description: >-
+            Строк спроса с ошибкой расчёта формулы: contract = Formula,
+            candidate_count > 0, цена пустая, status ∈ {component_error, invalid_formula}
+        control_sum_mln:
+          type: number
+          format: double
+          description: >-
+            Контрольная сумма, млн ₽: Σ(price × forecast × курс_к_RUB) / 1 000 000
+            по всем строкам с ценой (включая просроченные и конфликтные формулы)
+        unclassified_error_pct:
           type: integer
-          nullable: true
-          description: Строк, совпавших с эталоном в допуске ±3% (null — эталона нет)
-        matched_pct:
-          type: integer
-          nullable: true
-          description: Доля совпавших с эталоном, %
-        error_rows:
-          type: integer
-          description: Строк с ошибками (нет формулы / нет котировки)
+          description: >-
+            % непонятных ошибок: строки с неклассифицированной ошибкой среди всех
+            строк с ошибкой (классифицированные — no_formula, component_error, invalid_formula)
 
     # ── строки ──
 
@@ -934,6 +1028,11 @@ components:
           type: string
           description: Источник значения (файл/справочник)
           example: quotes.csv
+        quote_name:
+          type: string
+          nullable: true
+          description: Имя котировки из маппинга (для типа quote)
+          example: PP raffia CPT Moscow
         quote_code:
           type: integer
           format: int64
@@ -1062,6 +1161,29 @@ components:
           format: double
           nullable: true
           description: Цена строки при применении этой формулы (null — расчёт не удался)
+        formula_currency:
+          type: string
+          description: Валюта документа формулы
+          example: RUB
+        price_formula_currency:
+          type: number
+          format: double
+          nullable: true
+          description: Цена в валюте документа формулы (до конвертации в валюту строки)
+        status:
+          $ref: '#/components/schemas/RowStatus'
+        selection_reason:
+          description: Причина выбора (заполнена у применённого кандидата)
+          allOf:
+            - $ref: '#/components/schemas/SelectionReason'
+        equal_priority_count:
+          type: integer
+          default: 0
+          description: Сколько кандидатов равноприоритетны этому (>1 — конфликт)
+        warning:
+          type: string
+          nullable: true
+          description: Предупреждение расчёта кандидата (например, продление просроченной формулы)
         calc_error:
           type: string
           nullable: true
@@ -1069,7 +1191,7 @@ components:
         matched:
           type: boolean
           nullable: true
-          description: Совпадение с эталоном ±3% при применении этой формулы
+          description: Совпадение с эталоном ±3% при применении этой формулы (в UI не показывается)
         is_selected:
           type: boolean
           description: Применена ли эта формула к строке сейчас

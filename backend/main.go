@@ -7,40 +7,35 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"sibur-petrochem-price-service/internal/app"
+	"sibur-petrochem-price-service/internal/config"
 )
 
 // Миграции и seed применяются отдельно (docker-сервис migrate / `make migrate-up`),
-// а не приложением. Здесь — подключение к готовой БД и запуск сервиса.
+// а не приложением. Здесь — подключение к готовой БД и запуск HTTP-сервиса.
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		slog.Error("database_url is empty")
-		os.Exit(1)
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	ctx := context.Background()
-
-	pool, err := pgxpool.New(ctx, databaseURL)
+	cfg, err := config.Parse()
 	if err != nil {
-		slog.Error("connect pool failed", "error", err)
+		slog.Error("config parse failed", "error", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
 
-	if err := pool.Ping(ctx); err != nil {
-		slog.Error("db ping failed", "error", err)
+	application, err := app.New(ctx, cfg)
+	if err != nil {
+		slog.Error("app init failed", "error", err)
 		os.Exit(1)
 	}
+
 	slog.Info("connected to database")
+	application.Run()
 
-	// TODO: здесь стартует HTTP-сервис (хендлеры из api/openapi.yaml).
-	// Пока сервиса нет — держим процесс живым до сигнала.
-	stop, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-	<-stop.Done()
+	<-ctx.Done()
 	slog.Info("shutdown signal received")
+	application.Shutdown(context.Background())
 }

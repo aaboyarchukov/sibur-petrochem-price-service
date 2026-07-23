@@ -465,20 +465,24 @@ export interface components {
             /** @example 50 */
             percent: number;
         };
-        /** @description Сводные показатели качества расчёта */
+        /**
+         * @description Пять канонических KPI отображения (documents/кпэ_для_отображения.md).
+         *     Метрика «совпало с эталоном ±3%» — вне UI-канона и в KPI не входит.
+         */
         Kpi: {
-            /** @description Всего строк в расчёте */
-            total_rows: number;
-            /** @description Строк с посчитанной ценой */
-            priced_rows: number;
-            /** @description Доля строк с ценой, % */
-            priced_pct: number;
-            /** @description Строк, совпавших с эталоном в допуске ±3% (null — эталона нет) */
-            matched_rows?: number | null;
-            /** @description Доля совпавших с эталоном, % */
-            matched_pct?: number | null;
-            /** @description Строк с ошибками (нет формулы / нет котировки) */
-            error_rows: number;
+            /** @description % покрытия формулами строк спроса: строки Formula с candidate_count > 0 среди всех строк Formula (SPOT исключается) */
+            formula_coverage_pct: number;
+            /** @description % формул, которые вычисляются без ошибок: formula_id, у которых все кандидаты CALCULATED, среди всех найденных formula_id */
+            formulas_ok_pct: number;
+            /** @description Строк спроса с ошибкой расчёта формулы: contract = Formula, candidate_count > 0, цена пустая, status ∈ {component_error, invalid_formula} */
+            calc_error_rows: number;
+            /**
+             * Format: double
+             * @description Контрольная сумма, млн ₽: Σ(price × forecast × курс_к_RUB) / 1 000 000 по всем строкам с ценой (включая просроченные и конфликтные формулы)
+             */
+            control_sum_mln: number;
+            /** @description % непонятных ошибок: строки с неклассифицированной ошибкой среди всех строк с ошибкой (классифицированные — no_formula, component_error, invalid_formula) */
+            unclassified_error_pct: number;
         };
         /**
          * @description Статус подбора и расчёта строки (соответствует статусам эталонного алгоритма):
@@ -609,6 +613,11 @@ export interface components {
              */
             source?: string;
             /**
+             * @description Имя котировки из маппинга (для типа quote)
+             * @example PP raffia CPT Moscow
+             */
+            quote_name?: string | null;
+            /**
              * Format: int64
              * @description ID котировки в озере данных (для типа quote)
              */
@@ -717,9 +726,29 @@ export interface components {
              * @description Цена строки при применении этой формулы (null — расчёт не удался)
              */
             price?: number | null;
+            /**
+             * @description Валюта документа формулы
+             * @example RUB
+             */
+            formula_currency?: string;
+            /**
+             * Format: double
+             * @description Цена в валюте документа формулы (до конвертации в валюту строки)
+             */
+            price_formula_currency?: number | null;
+            status?: components["schemas"]["RowStatus"];
+            /** @description Причина выбора (заполнена у применённого кандидата) */
+            selection_reason?: components["schemas"]["SelectionReason"];
+            /**
+             * @description Сколько кандидатов равноприоритетны этому (>1 — конфликт)
+             * @default 0
+             */
+            equal_priority_count: number;
+            /** @description Предупреждение расчёта кандидата (например, продление просроченной формулы) */
+            warning?: string | null;
             /** @description Ошибка расчёта этого кандидата (компонент/парсинг) */
             calc_error?: string | null;
-            /** @description Совпадение с эталоном ±3% при применении этой формулы */
+            /** @description Совпадение с эталоном ±3% при применении этой формулы (в UI не показывается) */
             matched?: boolean | null;
             /** @description Применена ли эта формула к строке сейчас */
             is_selected: boolean;

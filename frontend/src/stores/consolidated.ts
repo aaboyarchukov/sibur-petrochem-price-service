@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ConsolidatedDocument } from '@/types'
 import { usePricingApi } from '@/services/provide'
+import { useCalculationStore } from '@/stores/calculation'
 
 const PERIOD = '2026-06'
 
@@ -15,7 +16,11 @@ export const useConsolidatedStore = defineStore('consolidated', () => {
   }
 
   async function submitMyPart(): Promise<void> {
-    await api.submitPart('calc-mine')
+    const calculation = useCalculationStore()
+    if (!calculation.calculationId) {
+      throw new Error('сначала выполните расчёт — присоединять пока нечего')
+    }
+    await api.submitPart(calculation.calculationId)
     await load()
   }
 

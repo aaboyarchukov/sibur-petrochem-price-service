@@ -1,0 +1,55 @@
+UI_FIELDS = {
+    # Экран 1 — основная таблица
+    "results_main": [
+        "row_id",
+        "client_name",
+        "mtr_nsi_name",
+        "period",
+        "price",
+        "currency",
+        "status",
+        "candidate_count",
+        "requires_review",
+        "warning",
+    ],
+
+    # Экран 2 — все формулы для строки спроса
+    "formula_list": [
+        "formula_id",
+        "formula_expression",
+        "is_selected",
+        "is_formula_actual",
+        "match_scope",
+        "valid_from",
+        "valid_to",
+        "created_at",
+        "price",
+      "formula_currency",
+        "price_formula_currency",
+        "status",
+        "selection_reason",
+        "equal_priority_count",
+        "warning",
+        "error",
+    ],
+
+    # Экран 3 — расшифровка компонентов
+    "component_details": [
+        "var_name",
+        "component_type_label",
+        "value",
+        "quote_name",
+        "source",
+        "source_date",
+        "version_type",
+        "warning",
+        "error",
+    ],
+
+    # Не показываются, но нужны для переходов между экранами
+    "hidden_keys": [
+        "demand_key",
+        "row_id",
+        "formula_id",
+    ],
+}

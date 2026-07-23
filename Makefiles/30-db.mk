@@ -25,3 +25,8 @@ migrate-down: ## Откатить последнюю миграцию
 .PHONY: migrate-force
 migrate-force: ## Проставить версию без запуска (использование: make migrate-force VERSION=1)
 	@$(MIGRATE) -path=$(MIGRATIONS_DIR) -database "$(DB_DSN)" force $(VERSION)
+
+.PHONY: sqlc-gen
+sqlc-gen: ## Сгенерировать Go код из SQL запросов
+	@$(SQLC) generate -f backend/db/sqlc.yaml
+	@echo "SQLC code generated"

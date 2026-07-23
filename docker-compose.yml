@@ -61,6 +61,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        # DEMO_ENABLED=true в .env включает кнопку «Загрузить демо-набор»
+        VITE_DEMO_ENABLED: ${DEMO_ENABLED:-false}
     restart: unless-stopped
     depends_on:
       - backend
