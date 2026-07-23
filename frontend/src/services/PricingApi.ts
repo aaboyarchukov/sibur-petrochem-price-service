@@ -24,6 +24,8 @@ export interface PricingApi {
   loadDemoData(): Promise<Source[]>
   // Загрузка пользовательского .xlsx (ssp | formulas): замещает данные источника.
   uploadSource(key: string, file: File): Promise<Source>
+  // Сброс в начальное состояние: отметки загрузки сняты, расчёты сессии удалены.
+  resetSources(): Promise<Source[]>
   previewSource(key: string, limit?: number): Promise<SourcePreview>
 
   // Присутствие: поток числа аналитиков онлайн (SSE в http, константа в mock).

@@ -56,6 +56,14 @@ func New(loader SourcesLoader, engine *pricing.Engine) *Service {
 	}
 }
 
+// Reset — удаление всех расчётов сессии (правки и участки пропадают вместе с ними).
+func (s *Service) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.calcs = map[string]*calculation{}
+	s.order = nil
+}
+
 // Create — загрузка источников, прогон движка за период, регистрация расчёта.
 // Расчёт синхронный (сотни-тысячи строк за доли секунды); контрактный статус — done.
 func (s *Service) Create(ctx context.Context, period string) (Info, error) {

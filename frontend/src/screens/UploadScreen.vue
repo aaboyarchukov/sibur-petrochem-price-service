@@ -71,6 +71,13 @@ async function loadDemo(): Promise<void> {
   await sources.loadDemo()
 }
 
+// Сброс: отметки загрузки и расчёты сессии удаляются, приложение — в начальное состояние.
+async function reset(): Promise<void> {
+  if (!window.confirm('Сбросить загруженные файлы и расчёты? Ручные правки пропадут.')) return
+  await sources.reset()
+  window.location.reload()
+}
+
 async function compute(): Promise<void> {
   computeError.value = ''
   try {
@@ -91,9 +98,14 @@ async function compute(): Promise<void> {
           <div class="mono eyebrow">Исходные данные</div>
           <h2>Загрузка источников</h2>
         </div>
-        <AppButton v-if="sources.loaded" variant="action" @click="compute">
-          Рассчитать {{ formatInt(sources.preview?.total_rows ?? 0) }} строк →
-        </AppButton>
+        <div class="head-actions">
+          <AppButton v-if="sources.uploaded.some((s) => s.uploaded_at)" @click="reset">
+            Сбросить
+          </AppButton>
+          <AppButton v-if="sources.loaded" variant="action" @click="compute">
+            Рассчитать {{ formatInt(sources.preview?.total_rows ?? 0) }} строк →
+          </AppButton>
+        </div>
       </header>
 
       <p class="text-muted lead">
@@ -180,7 +192,7 @@ async function compute(): Promise<void> {
         </BlueprintPanel>
 
         <div class="preview-head">
-          <h4>Превью — ssp.csv</h4>
+          <h4>Превью — ssp.xlsx</h4>
           <span class="mono text-muted">первые {{ sources.preview?.rows.length }} строк</span>
         </div>
         <BlueprintPanel class="preview-panel">
@@ -224,6 +236,10 @@ async function compute(): Promise<void> {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 10px;
+}
+.head-actions {
+  display: flex;
+  gap: 8px;
 }
 .eyebrow {
   font-size: 11px;

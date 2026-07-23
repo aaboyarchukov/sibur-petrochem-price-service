@@ -51,7 +51,7 @@ async function submit(): Promise<void> {
 
 async function exportExcel(): Promise<void> {
   await store.exportExcel()
-  show('Файл сформирован: consolidated_2026-06.csv')
+  show('Файл сформирован: consolidated_2026-06.xlsx')
 }
 </script>
 

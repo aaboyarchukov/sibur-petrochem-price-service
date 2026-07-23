@@ -85,6 +85,31 @@ paths:
                     items:
                       $ref: '#/components/schemas/Source'
 
+  /sources/reset:
+    post:
+      tags: [sources]
+      operationId: resetSources
+      summary: Сбросить загрузку источников
+      description: |
+        Возвращает приложение в начальное состояние: снимает отметки загрузки
+        пользовательских источников (`uploaded_at`), удаляет все расчёты
+        текущей сессии (включая ручные правки и присоединённые участки).
+        Данные таблиц не очищаются — повторная загрузка файла или активация
+        демо-набора снова разрешают расчёт.
+      responses:
+        '200':
+          description: Состояние сброшено
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+
   /sources/{sourceKey}/file:
     post:
       tags: [sources]

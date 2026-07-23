@@ -67,6 +67,16 @@ export class MockPricingApi implements PricingApi {
     return structuredClone(found)
   }
 
+  async resetSources(): Promise<Source[]> {
+    for (const source of this.sources) {
+      if (source.kind === 'uploaded') source.uploaded_at = null
+    }
+    this.manual.clear()
+    this.selected.clear()
+    this.submitted = false
+    return structuredClone(this.sources)
+  }
+
   streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe {
     onCount(3) // детерминированный mock: без backend присутствие не отслеживается
     return () => undefined

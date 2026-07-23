@@ -247,6 +247,45 @@ func TestCreateCalculationAfterDemoActivation(t *testing.T) {
 	tc.State.Response = Responses{Code: code, Body: body}
 }
 
+func TestResetSourcesReturnsInitialState(t *testing.T) {
+	tc := newTestContext(t)
+
+	tc.Given(func(t *testing.T, state State) State {
+		t.Helper()
+		state.Given.Sources = demoSources(t, state)
+
+		return state
+	}).When(func(t *testing.T, deps Deps, state State) State {
+		t.Helper()
+		deps.Sources.src = state.Given.Sources
+
+		return state
+	}).Then(func(t *testing.T, state State) {
+		t.Helper()
+		// после сброса расчёт снова запрещён
+		require.Equal(t, nethttp.StatusConflict, state.Response.Code)
+		assert.Equal(t, "sources_not_loaded", state.Response.Body["code"])
+	})
+
+	// полный цикл: демо + расчёт → reset → отметки сняты, расчёт запрещён
+	calcID := createCalculation(t, tc.SUT, "2026-06")
+
+	resetCode, resetBody, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/sources/reset", nil)
+	require.Equal(t, nethttp.StatusOK, resetCode)
+	items, ok := resetBody["items"].([]any)
+	require.True(t, ok)
+	first, ok := items[0].(map[string]any)
+	require.True(t, ok)
+	assert.Nil(t, first["uploaded_at"], "отметка загрузки должна быть снята")
+
+	// расчёты сессии удалены
+	getCode, _, _ := do(t, tc.SUT, nethttp.MethodGet, "/api/v1/calculations/"+calcID, nil)
+	require.Equal(t, nethttp.StatusNotFound, getCode)
+
+	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": "2026-06"})
+	tc.State.Response = Responses{Code: code, Body: body}
+}
+
 func TestUploadUnknownSource(t *testing.T) {
 	tc := newTestContext(t)
 

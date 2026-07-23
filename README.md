@@ -51,6 +51,8 @@ npm run typecheck && npm run lint && npm run test && npm run build
 Фронтенд по умолчанию ходит в реальный backend; режим моков без сервера:
 `VITE_API_MODE=mock npm run dev`.
 
+Подробная архитектура (БД, backend, frontend, потоки данных): [docs/architecture.md](docs/architecture.md).
+
 ## Структура
 
 ```

@@ -52,6 +52,12 @@ func (h *Handler) markUploaded(key api.SourceKey) {
 	h.uploaded[key] = time.Now()
 }
 
+func (h *Handler) resetUploaded() {
+	h.uploadedMu.Lock()
+	defer h.uploadedMu.Unlock()
+	h.uploaded = map[api.SourceKey]time.Time{}
+}
+
 func (h *Handler) uploadTime(key api.SourceKey) (ts time.Time, ok bool) {
 	h.uploadedMu.Lock()
 	defer h.uploadedMu.Unlock()

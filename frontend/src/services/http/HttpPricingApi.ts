@@ -56,6 +56,10 @@ export class HttpPricingApi implements PricingApi {
     return sendJson<{ items: Source[] }>('/sources/demo', 'POST').then((r) => r.items)
   }
 
+  resetSources(): Promise<Source[]> {
+    return sendJson<{ items: Source[] }>('/sources/reset', 'POST').then((r) => r.items)
+  }
+
   async uploadSource(key: string, file: File): Promise<Source> {
     const form = new FormData()
     form.append('file', file, file.name)

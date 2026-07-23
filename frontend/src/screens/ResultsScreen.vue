@@ -111,7 +111,7 @@ const sortIndicator = (key: string) =>
 
 async function exportExcel(): Promise<void> {
   await calculation.exportExcel()
-  show('Файл сформирован: prices_2026-06.csv')
+  show('Файл сформирован: prices_2026-06.xlsx')
 }
 
 function saveMyPart(): void {

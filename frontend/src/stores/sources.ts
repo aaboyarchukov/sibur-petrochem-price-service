@@ -35,6 +35,13 @@ export const useSourcesStore = defineStore('sources', () => {
     fetched.value = true
   }
 
+  // Сброс в начальное состояние на backend; вызывающий перезагружает приложение.
+  async function reset(): Promise<void> {
+    sources.value = await api.resetSources()
+    preview.value = null
+    uploadError.value = null
+  }
+
   // Загрузка пользовательского .xlsx; ошибка валидации файла остаётся в uploadError.
   async function upload(key: string, file: File): Promise<void> {
     uploadError.value = null
@@ -61,5 +68,6 @@ export const useSourcesStore = defineStore('sources', () => {
     refresh,
     loadDemo,
     upload,
+    reset,
   }
 })

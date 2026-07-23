@@ -77,6 +77,21 @@ func (h *Handler) ListSources(ctx context.Context, _ api.ListSourcesRequestObjec
 	return api.ListSources200JSONResponse{Items: items}, nil
 }
 
+// ResetSources — начальное состояние: отметки загрузки снимаются, расчёты
+// сессии удаляются. Данные таблиц остаются — повторная загрузка или демо
+// снова разрешают расчёт.
+func (h *Handler) ResetSources(ctx context.Context, _ api.ResetSourcesRequestObject) (api.ResetSourcesResponseObject, error) {
+	h.resetUploaded()
+	h.calcs.Reset()
+
+	items, err := h.sourceItems(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.ResetSources200JSONResponse{Items: items}, nil
+}
+
 // LoadDemoSources — активация демо-набора: seed-данные помечаются загруженными,
 // расчёт разрешается без передачи файлов.
 func (h *Handler) LoadDemoSources(ctx context.Context, _ api.LoadDemoSourcesRequestObject) (api.LoadDemoSourcesResponseObject, error) {
