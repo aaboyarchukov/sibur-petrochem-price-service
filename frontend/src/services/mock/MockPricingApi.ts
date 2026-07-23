@@ -52,7 +52,24 @@ export class MockPricingApi implements PricingApi {
   }
 
   async loadDemoData(): Promise<Source[]> {
+    // демо-активация помечает пользовательские источники загруженными
+    for (const source of this.sources) {
+      if (source.kind === 'uploaded') source.uploaded_at = new Date().toISOString()
+    }
     return structuredClone(this.sources)
+  }
+
+  async uploadSource(key: string, file: File): Promise<Source> {
+    const found = this.sources.find((s) => s.key === key)
+    if (!found) throw new Error(`неизвестный источник: ${key}`)
+    found.file_name = file.name
+    found.uploaded_at = new Date().toISOString()
+    return structuredClone(found)
+  }
+
+  streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe {
+    onCount(3) // детерминированный mock: без backend присутствие не отслеживается
+    return () => undefined
   }
 
   async previewSource(_key: string, limit = 5): Promise<SourcePreview> {

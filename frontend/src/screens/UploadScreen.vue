@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSourcesStore } from '@/stores/sources'
 import { useCalculationStore } from '@/stores/calculation'
@@ -6,17 +7,79 @@ import { formatInt } from '@/lib/format'
 import BlueprintPanel from '@/components/BlueprintPanel.vue'
 import AppButton from '@/components/AppButton.vue'
 
+type UploadKey = 'ssp' | 'formulas'
+
 const router = useRouter()
 const sources = useSourcesStore()
 const calculation = useCalculationStore()
+
+const uploadZones: { key: UploadKey; name: string; file: string }[] = [
+  { key: 'ssp', name: 'Прогноз спроса', file: 'ssp.xlsx' },
+  { key: 'formulas', name: 'Каталог формул', file: 'formulas.xlsx' },
+]
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const pendingKey = ref<UploadKey>('ssp')
+const dragKey = ref<UploadKey | null>(null)
+const computeError = ref('')
+
+// Кнопка демо-набора активируется флагом сборки (VITE_DEMO_ENABLED=true).
+const demoEnabled = import.meta.env.VITE_DEMO_ENABLED === 'true'
+
+function pick(key: UploadKey): void {
+  pendingKey.value = key
+  fileInput.value?.click()
+}
+
+function onFileChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) void handleFile(pendingKey.value, file)
+  input.value = ''
+}
+
+function onDrop(key: UploadKey, event: DragEvent): void {
+  dragKey.value = null
+  const file = event.dataTransfer?.files?.[0]
+  if (file) void handleFile(key, file)
+}
+
+async function handleFile(key: UploadKey, file: File): Promise<void> {
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    sources.uploadError = `«${file.name}» — нужен файл .xlsx`
+    return
+  }
+  await sources.upload(key, file)
+}
+
+// Файл, брошенный мимо зоны, не должен открываться браузером вместо страницы.
+function preventWindowDrop(event: DragEvent): void {
+  event.preventDefault()
+}
+onMounted(() => {
+  window.addEventListener('dragover', preventWindowDrop)
+  window.addEventListener('drop', preventWindowDrop)
+  // актуальное состояние источников (uploaded_at живёт на backend)
+  void sources.refresh().catch(() => undefined)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('dragover', preventWindowDrop)
+  window.removeEventListener('drop', preventWindowDrop)
+})
 
 async function loadDemo(): Promise<void> {
   await sources.loadDemo()
 }
 
 async function compute(): Promise<void> {
-  await calculation.start('2026-06')
-  await router.push({ name: 'computing' })
+  computeError.value = ''
+  try {
+    await calculation.start('2026-06')
+    await router.push({ name: 'computing' })
+  } catch (e) {
+    // 409 sources_not_loaded и прочие ошибки запуска
+    computeError.value = e instanceof Error ? e.message : String(e)
+  }
 }
 </script>
 
@@ -34,11 +97,56 @@ async function compute(): Promise<void> {
       </header>
 
       <p class="text-muted lead">
-        Загрузите прогноз спроса <span class="mono">ssp.csv</span> и каталог формул
-        <span class="mono">formulas.csv</span>. Остальные справочники подтягиваются сервисом.
+        Загрузите прогноз спроса <span class="mono">ssp.xlsx</span> и каталог формул
+        <span class="mono">formulas.xlsx</span> — файл замещает данные источника.
+        Остальные справочники подтягиваются сервисом.
       </p>
 
-      <!-- Пустое состояние -->
+      <!-- Зоны загрузки пользовательских .xlsx -->
+      <input ref="fileInput" type="file" accept=".xlsx" class="file-input" @change="onFileChange" />
+      <div class="upload-grid">
+        <div
+          v-for="zone in uploadZones"
+          :key="zone.key"
+          class="drop-zone"
+          :class="{ drag: dragKey === zone.key, busy: sources.uploadingKey === zone.key }"
+          @click="pick(zone.key)"
+          @dragover.prevent="dragKey = zone.key"
+          @dragleave="dragKey = null"
+          @drop.prevent="onDrop(zone.key, $event)"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 15V3m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+          </svg>
+          <div class="drop-info">
+            <div class="drop-name">{{ zone.name }}</div>
+            <div class="mono text-muted drop-hint">
+              {{ sources.uploadingKey === zone.key ? 'загрузка…' : zone.file + ' — перетащите или кликните' }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <p v-if="sources.uploadError" class="mono upload-error">{{ sources.uploadError }}</p>
+      <p v-if="computeError" class="mono upload-error">{{ computeError }}</p>
+
+      <!-- Статус пользовательских источников -->
+      <div v-if="sources.fetched" class="src-grid">
+        <BlueprintPanel v-for="s in sources.uploaded" :key="s.key">
+          <div class="src-card">
+            <div class="src-icon">▦</div>
+            <div class="src-info">
+              <div class="src-name">{{ s.name }}</div>
+              <div class="mono text-muted src-meta">
+                {{ s.file_name }} · {{ formatInt(s.row_count) }} строк
+              </div>
+            </div>
+            <span v-if="s.uploaded_at" class="mono chip-ok">загружен</span>
+            <span v-else class="mono chip-pending">не загружен</span>
+          </div>
+        </BlueprintPanel>
+      </div>
+
+      <!-- Пустое состояние: расчёт запрещён, пока не загружены оба файла -->
       <BlueprintPanel v-if="!sources.loaded" class="empty-panel">
         <div class="empty">
           <div class="upload-icon">
@@ -48,29 +156,16 @@ async function compute(): Promise<void> {
           </div>
           <div class="empty-title">Данные не загружены</div>
           <p class="text-muted empty-sub">
-            Загрузите демонстрационный набор, чтобы увидеть проверку источников и запустить расчёт.
+            Загрузите ssp.xlsx и formulas.xlsx выше — без них расчёт недоступен.
           </p>
-          <AppButton variant="action" @click="loadDemo">Загрузить демо-набор</AppButton>
+          <AppButton v-if="demoEnabled" variant="action" @click="loadDemo">
+            Загрузить демо-набор
+          </AppButton>
         </div>
       </BlueprintPanel>
 
       <!-- Загруженное состояние -->
       <template v-else>
-        <div class="src-grid">
-          <BlueprintPanel v-for="s in sources.uploaded" :key="s.key">
-            <div class="src-card">
-              <div class="src-icon">▦</div>
-              <div class="src-info">
-                <div class="src-name">{{ s.name }}</div>
-                <div class="mono text-muted src-meta">
-                  {{ s.file_name }} · {{ formatInt(s.row_count) }} строк
-                </div>
-              </div>
-              <span class="mono chip-ok">загружен</span>
-            </div>
-          </BlueprintPanel>
-        </div>
-
         <div class="mono eyebrow ref-title">Справочники сервиса · подтягиваются автоматически</div>
         <BlueprintPanel class="ref-panel">
           <div class="ref-grid">
@@ -145,6 +240,51 @@ h2 {
   font-size: 14px;
   margin-bottom: 22px;
 }
+.file-input {
+  display: none;
+}
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.drop-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px dashed var(--color-divider);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop-zone:hover,
+.drop-zone.drag {
+  border-color: var(--color-accent);
+}
+.drop-zone.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.drop-info {
+  min-width: 0;
+}
+.drop-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+.drop-hint {
+  font-size: 11px;
+}
+.upload-error {
+  font-size: 12px;
+  color: var(--st-err, #c0392b);
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+}
 .empty {
   display: grid;
   place-items: center;
@@ -211,6 +351,12 @@ h2 {
   padding: 3px 9px;
   color: var(--st-ok);
   background: var(--st-ok-bg);
+}
+.chip-pending {
+  font-size: 11px;
+  padding: 3px 9px;
+  color: var(--st-warn, #b8860b);
+  border: 1px dashed var(--color-divider);
 }
 .ref-title {
   margin: 2px 0 8px;

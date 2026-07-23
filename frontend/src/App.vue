@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import { useToast } from '@/composables/useToast'
 import { useSourcesStore } from '@/stores/sources'
+import { usePricingApi } from '@/services/provide'
 import AppToast from '@/components/AppToast.vue'
 
 const route = useRoute()
@@ -11,6 +12,26 @@ const router = useRouter()
 const { theme, toggle } = useTheme()
 const { message } = useToast()
 const sources = useSourcesStore()
+const api = usePricingApi()
+
+// Присутствие аналитиков в реальном времени (SSE).
+const analystsOnline = ref(1)
+let unsubscribePresence: (() => void) | null = null
+onMounted(() => {
+  unsubscribePresence = api.streamPresence((count) => {
+    analystsOnline.value = count
+  })
+})
+onBeforeUnmount(() => unsubscribePresence?.())
+
+const analystsLabel = computed(() => {
+  const n = analystsOnline.value
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return `${n} аналитик онлайн`
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} аналитика онлайн`
+  return `${n} аналитиков онлайн`
+})
 
 const steps = computed(() => [
   { name: 'upload', num: '1', label: 'Данные', enabled: true },
@@ -57,7 +78,7 @@ function go(name: string, enabled: boolean): void {
       </nav>
 
       <div class="right">
-        <div class="mono online"><span class="online-dot" />3 аналитика онлайн</div>
+        <div class="mono online"><span class="online-dot" />{{ analystsLabel }}</div>
         <button class="mono theme-btn" @click="toggle">
           {{ theme === 'light' ? '◑ Тёмная' : '◐ Светлая' }}
         </button>

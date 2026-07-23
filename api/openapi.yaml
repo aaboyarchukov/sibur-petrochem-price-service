@@ -33,6 +33,8 @@ tags:
     description: Сводный документ за период — участки аналитиков
   - name: formulas
     description: Работа с выражениями формул — парсинг и валидация
+  - name: presence
+    description: Присутствие аналитиков — количество онлайн в реальном времени
 
 paths:
 
@@ -49,6 +51,29 @@ paths:
       responses:
         '200':
           description: Список источников
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+
+  /sources/demo:
+    post:
+      tags: [sources]
+      operationId: loadDemoSources
+      summary: Активировать демо-набор источников
+      description: |
+        Помечает пользовательские источники (`ssp`, `formulas`) загруженными
+        демо-данными из seed-миграций — без передачи файлов. После вызова
+        расчёт разрешён. Кнопка в UI показывается по флагу сборки.
+      responses:
+        '200':
+          description: Демо-набор активирован
           content:
             application/json:
               schema:
@@ -418,6 +443,27 @@ paths:
 
   # ─────────────────────────── FORMULAS ───────────────────────────
 
+  /presence/events:
+    get:
+      tags: [presence]
+      operationId: streamPresence
+      summary: Поток присутствия аналитиков (SSE)
+      description: |
+        Server-Sent Events поток количества аналитиков онлайн. Каждое открытое
+        соединение считается одним аналитиком (MVP без аутентификации).
+        Событие `PresenceEvent` приходит при подключении и при каждом изменении
+        числа подключений; периодически шлётся keep-alive комментарий.
+
+        Реализуется вне strict-сервера (нужен незабуференный flush долгоживущего
+        потока), поэтому исключён из кодогенерации (`exclude-operation-ids`).
+      responses:
+        '200':
+          description: Поток событий присутствия
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/PresenceEvent'
+
   /formulas/parse:
     post:
       tags: [formulas]
@@ -734,6 +780,16 @@ components:
           minimum: 0
           maximum: 100
           example: 50
+
+    PresenceEvent:
+      type: object
+      description: Событие SSE-потока присутствия — число аналитиков онлайн
+      required: [analysts_online]
+      properties:
+        analysts_online:
+          type: integer
+          minimum: 0
+          example: 3
 
     Kpi:
       type: object

@@ -193,18 +193,24 @@ async function resetManual(): Promise<void> {
 
 <style scoped>
 .backdrop {
-  position: absolute;
+  /* fixed: окно не листается вместе с экраном под ним */
+  position: fixed;
   inset: 0;
   background: rgba(0, 20, 25, 0.42);
   display: flex;
   justify-content: flex-end;
   z-index: 35;
+  overscroll-behavior: contain;
 }
 .panel {
   width: min(780px, 94vw);
+  /* строго в высоту экрана: шапка и футер с ценой зафиксированы, скроллится только тело */
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 .head {
   padding: 14px 18px;

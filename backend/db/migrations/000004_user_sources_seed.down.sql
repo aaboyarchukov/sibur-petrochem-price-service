@@ -1,0 +1,2 @@
+TRUNCATE formulas;
+TRUNCATE ssp;

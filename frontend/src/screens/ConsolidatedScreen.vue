@@ -41,8 +41,12 @@ const kpiCards = computed(() => {
 })
 
 async function submit(): Promise<void> {
-  await store.submitMyPart()
-  show('Ваш участок присоединён к сводному документу')
+  try {
+    await store.submitMyPart()
+    show('Ваш участок присоединён к сводному документу')
+  } catch (e) {
+    show(e instanceof Error ? e.message : String(e))
+  }
 }
 
 async function exportExcel(): Promise<void> {

@@ -34,3 +34,7 @@ go.work.sum
 .specify/
 .DS_Store
 openspec/
+generated/
+
+__pycache__
+bin/

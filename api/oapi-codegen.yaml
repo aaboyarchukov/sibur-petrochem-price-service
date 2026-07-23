@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+package: api
+output: backend/internal/generated/api/server.gen.go
+generate:
+  std-http-server: true
+  models: true
+  strict-server: true
+  embedded-spec: true
+output-options:
+  skip-prune: true
+  # SSE присутствия реализован вне strict-сервера: нужен flush долгоживущего потока
+  exclude-operation-ids:
+    - streamPresence
+  name-normalizer: ToCamelCaseWithInitialisms
+  additional-initialisms:
+    - API
+    - KPI
+  nullable-type: true

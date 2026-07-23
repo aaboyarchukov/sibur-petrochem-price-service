@@ -22,7 +22,12 @@ export interface PricingApi {
   // Источники данных.
   listSources(): Promise<Source[]>
   loadDemoData(): Promise<Source[]>
+  // Загрузка пользовательского .xlsx (ssp | formulas): замещает данные источника.
+  uploadSource(key: string, file: File): Promise<Source>
   previewSource(key: string, limit?: number): Promise<SourcePreview>
+
+  // Присутствие: поток числа аналитиков онлайн (SSE в http, константа в mock).
+  streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe
 
   // Расчёт.
   createCalculation(period: string): Promise<Calculation>
