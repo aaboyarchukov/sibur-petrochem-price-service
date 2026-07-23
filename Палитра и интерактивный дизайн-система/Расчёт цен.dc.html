@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/industry-0f5e2946-c46e-4fa7-b51a-5d70a1a5c07b/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    [data-app] {
+      --color-bg:#ffffff; --color-surface:#f3f7f6; --color-text:#0c2b31;
+      --color-divider:rgba(0,49,60,.16);
+      --color-accent:#00313c; --color-accent-2:#00313c;
+      --color-accent-100:#e6f6f0; --color-accent-200:#c9efe3; --color-accent-300:#77e2c3;
+      --color-accent-400:#3ba58f; --color-accent-500:#0d6a6f; --color-accent-600:#08505a;
+      --color-accent-700:#053b44; --color-accent-800:#02313a; --color-accent-900:#001f26;
+      --color-accent-2-100:#e6f6f0; --color-accent-2-800:#02313a;
+      --color-neutral-100:#eef2f1; --color-neutral-800:#12343a;
+      --mint:#77e2c3; --action:#e04e39; --action-600:#c53f2c;
+      --panel:#ffffff; --row-alt:#f7fafa; --header-bg:#f0f5f4;
+      --st-ok:#00787f; --st-ok-bg:rgba(0,140,149,.13);
+      --st-ext:#0a5a63; --st-ext-bg:rgba(119,226,195,.30);
+      --st-multi:#c0402d; --st-multi-bg:rgba(224,78,57,.13);
+      --st-manual:#0b4d57; --st-manual-bg:rgba(119,226,195,.22);
+      --st-warn:#8a6a00; --st-warn-bg:rgba(252,194,23,.20);
+      --st-err:#c23b32; --st-err-bg:rgba(252,120,110,.18);
+      --good:#008c95; --mid:#8a6a00; --bad:#c23b32;
+    }
+    [data-app][data-theme="dark"] {
+      --color-bg:#04212a; --color-surface:#0a2e37; --color-text:#e6f3ef;
+      --color-divider:rgba(119,226,195,.16);
+      --color-accent:#77e2c3; --color-accent-2:#77e2c3;
+      --color-accent-100:#0e333b; --color-accent-200:#12414a; --color-accent-300:#1c5a5f;
+      --color-accent-400:#2f8a83; --color-accent-500:#4bb8a6; --color-accent-600:#8fe8d0;
+      --color-accent-700:#a9eedd; --color-accent-800:#c9f4e9; --color-accent-900:#e6faf4;
+      --color-accent-2-100:#0e333b; --color-accent-2-800:#c9f4e9;
+      --color-neutral-100:#0e333b; --color-neutral-800:#cfe9e3;
+      --mint:#77e2c3; --action:#f2664f; --action-600:#e04e39;
+      --panel:#082932; --row-alt:#07272f; --header-bg:#0a2e37;
+      --st-ok:#5fd6c9; --st-ok-bg:rgba(0,140,149,.24);
+      --st-ext:#8fe6cd; --st-ext-bg:rgba(119,226,195,.16);
+      --st-multi:#ff8a72; --st-multi-bg:rgba(224,78,57,.22);
+      --st-manual:#8fe6cd; --st-manual-bg:rgba(119,226,195,.14);
+      --st-warn:#f5c53d; --st-warn-bg:rgba(252,194,23,.16);
+      --st-err:#ff9088; --st-err-bg:rgba(252,120,110,.20);
+      --good:#3fd0c0; --mid:#f5c53d; --bad:#ff9088;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes drift { from { background-position: 0 0; } to { background-position: 40px 0; } }
+    .mono { font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    [data-app] ::-webkit-scrollbar { width:11px; height:11px; }
+    [data-app] ::-webkit-scrollbar-thumb { background:var(--color-divider); border:3px solid transparent; background-clip:padding-box; }
+  </style>
+</helmet>
+<div data-app data-theme="{{ theme }}" style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);display:flex;flex-direction:column">
+
+  <div style="display:flex;align-items:center;gap:20px;padding:0 20px;height:56px;border-bottom:1px solid var(--color-divider);background:var(--panel);flex:none;position:relative;z-index:5">
+    <div style="display:flex;align-items:center;gap:10px;margin-right:8px">
+      <div style="width:26px;height:26px;background:var(--color-accent);position:relative;flex:none">
+        <span style="position:absolute;inset:0;display:grid;place-items:center;color:var(--color-bg);font-family:var(--font-heading);font-weight:600;font-size:15px">P</span>
+      </div>
+      <div style="font-family:var(--font-heading);font-weight:600;font-size:17px;letter-spacing:-.01em;line-height:1">PETRO&#8202;PRICE<span style="color:var(--color-accent)">.</span><br><span style="font-family:var(--font-body);font-weight:400;font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;white-space:nowrap">Расчёт цен</span></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:4px">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <button onClick="{{ st.onClick }}" class="mono" style="{{ st.style }}">
+          <span style="{{ st.numStyle }}">{{ st.num }}</span>{{ st.label }}
+        </button>
+      </sc-for>
+      <div style="width:1px;height:22px;background:var(--color-divider);margin:0 4px"></div>
+      <button onClick="{{ goConsolidated }}" class="mono" style="{{ consTabStyle }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 21V9"/></svg>Сводный документ
+      </button>
+    </div>
+
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div class="mono" style="font-size:12px;opacity:.7;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--good)"></span>3 аналитика онлайн</div>
+      <button onClick="{{ toggleTheme }}" class="btn btn-secondary" style="height:34px;gap:7px;font-size:12px">{{ themeIcon }} {{ themeLabel }}</button>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;position:relative;overflow:hidden">
+
+    <!-- ═══════════ UPLOAD ═══════════ -->
+    <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ true }}">
+    <div style="height:100%;overflow:auto">
+      <div style="max-width:1080px;margin:0 auto;padding:28px 24px 64px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:10px">
+          <div style="flex:1;min-width:0">
+            <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin-bottom:4px">Исходные данные</div>
+            <h2 style="margin:0;font-size:30px;white-space:nowrap">Загрузка источников</h2>
+          </div>
+          <sc-if value="{{ uploaded }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ doCompute }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:46px;padding:0 26px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:9px" style-hover="background:var(--action-600);border-color:var(--action-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9 18 6-6-6-6"/></svg>Рассчитать 4 812 строк</button>
+          </sc-if>
+        </div>
+        <p class="text-muted" style="max-width:640px;font-size:14px;margin-bottom:22px">Загрузите два файла — прогноз спроса <span class="mono">ssp.xlsx</span> и каталог формул <span class="mono">formulas.xlsx</span>. Остальные источники подтягиваются из справочников сервиса и в загрузке не нуждаются.</p>
+
+        <!-- empty state -->
+        <sc-if value="{{ notUploaded }}" hint-placeholder-val="{{ true }}">
+        <div class="blueprint" style="padding:0;background:var(--panel)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="display:grid;place-items:center;text-align:center;padding:52px 24px;border:2px dashed var(--color-divider);margin:14px">
+            <div style="width:52px;height:52px;border:1.5px solid var(--color-accent);color:var(--color-accent);display:grid;place-items:center;margin-bottom:14px">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 15V3m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            </div>
+            <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;margin-bottom:4px">Данные не загружены</div>
+            <p class="text-muted" style="font-size:13px;margin-bottom:18px;max-width:440px">Перетащите <span class="mono">ssp.xlsx</span> и <span class="mono">formulas.xlsx</span> или загрузите демонстрационный набор, чтобы увидеть проверку источников.</p>
+            <button onClick="{{ doLoad }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:42px;padding:0 22px;font-family:var(--font-heading);font-weight:600;font-size:15px;cursor:pointer" style-hover="background:var(--action-600)">Загрузить демо-набор</button>
+            <div class="mono" style="margin-top:22px;display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;max-width:640px">
+              <sc-for list="{{ sources }}" as="s" hint-placeholder-count="8">
+                <span style="font-size:11px;opacity:.5">· {{ s.file }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- loaded state -->
+        <sc-if value="{{ uploaded }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px">
+          <sc-for list="{{ sources }}" as="s" hint-placeholder-count="8">
+            <div class="blueprint" style="padding:13px 15px;background:var(--panel);display:flex;align-items:center;gap:13px">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="width:34px;height:34px;flex:none;display:grid;place-items:center;color:{{ s.iconColor }};border:1px solid var(--color-divider)">{{ s.icon }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;line-height:1.2">{{ s.name }}</div>
+                <div class="mono text-muted" style="font-size:11px">{{ s.file }} · {{ s.rowsLabel }}</div>
+              </div>
+              <span class="mono" style="{{ s.chipStyle }}">{{ s.statusLabel }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin:2px 0 8px">Справочники сервиса · подтягиваются автоматически</div>
+        <div class="blueprint" style="padding:14px 16px;background:var(--panel);margin-bottom:24px">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 22px">
+            <sc-for list="{{ refs }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--st-ok)" stroke-width="1.8" style="flex:none"><path d="M20 6 9 17l-5-5"/></svg>
+                <span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                <span class="mono text-muted" style="font-size:10.5px;flex:none">{{ r.rowsLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <h4 style="margin:0;font-size:17px">Превью — ssp.xlsx</h4>
+          <span class="mono text-muted" style="font-size:12px">первые 5 из 4 812 строк</span>
+        </div>
+        <div class="blueprint" style="background:var(--panel);overflow:hidden">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <table class="table mono" style="font-size:13px">
+            <thead><tr>
+              <th>row_id</th><th>период</th><th>клиент</th><th>материал</th><th style="text-align:right">объём, т</th><th>тип</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ preview }}" as="p" hint-placeholder-count="5">
+                <tr><td>{{ p.id }}</td><td>{{ p.period }}</td><td class="mono">{{ p.client }}</td><td>{{ p.material }}</td><td style="text-align:right">{{ p.vol }}</td><td>{{ p.deal }}</td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+
+
+    <!-- ═══════════ COMPUTING ═══════════ -->
+    <sc-if value="{{ isComputing }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+      <div style="width:min(460px,86vw);text-align:center">
+        <div style="width:60px;height:60px;border:2px solid var(--color-divider);border-top-color:var(--color-accent);border-radius:50%;margin:0 auto 22px;animation:spin .8s linear infinite"></div>
+        <h3 style="margin:0 0 4px;font-size:22px">Идёт расчёт</h3>
+        <p class="text-muted mono" style="font-size:13px;margin-bottom:20px">Подбор формул · подстановка котировок · курсы валют</p>
+        <div style="height:8px;background:var(--color-surface);border:1px solid var(--color-divider);overflow:hidden">
+          <div style="height:100%;width:{{ progressPct }};background:var(--action);transition:width .18s linear"></div>
+        </div>
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;opacity:.75"><span>{{ progressRows }} строк</span><span>{{ progressPct }}</span></div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ═══════════ RESULTS ═══════════ -->
+    <sc-if value="{{ isResults }}" hint-placeholder-val="{{ true }}">
+    <div style="height:100%;display:flex;min-height:0;position:relative">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+
+        <!-- KPI -->
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 16px 4px;flex:none">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div class="blueprint" style="background:var(--panel);padding:12px 14px">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="mono text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">{{ k.label }}</div>
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <div class="mono" style="font-size:28px;font-weight:600;line-height:1;color:{{ k.color }}">{{ k.value }}</div>
+                <div style="font-size:12px;opacity:.65">{{ k.sub }}</div>
+              </div>
+              <div style="height:4px;background:var(--color-surface);margin-top:9px"><div style="height:100%;width:{{ k.bar }};background:{{ k.color }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- toolbar -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;flex:none;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:200px">
+            <div style="position:relative;flex:1;max-width:280px">
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input class="input mono" value="{{ query }}" onInput="{{ onQuery }}" placeholder="Поиск: клиент, материал, row_id…" style="padding-left:31px;font-size:13px">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="7">
+              <button onClick="{{ f.onClick }}" class="mono" style="{{ f.style }}">{{ f.label }} <span style="{{ f.countStyle }}">{{ f.count }}</span></button>
+            </sc-for>
+          </div>
+          <button onClick="{{ exportExcel }}" class="btn btn-secondary" style="height:36px;padding:0 13px;font-size:13px;gap:7px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Excel
+          </button>
+          <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ saveMyPart }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:36px;padding:0 15px;font-family:var(--font-heading);font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap" style-hover="background:var(--action-600);border-color:var(--action-600)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v6h8M8 21v-7h8v7"/></svg>Сохранить часть
+            </button>
+          </sc-if>
+          <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goConsolidated }}" class="btn" style="height:36px;padding:0 13px;font-size:13px;gap:7px;color:var(--st-ok);border-color:var(--st-ok)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6 9 17l-5-5"/></svg>Присоединено
+            </button>
+          </sc-if>
+        </div>
+
+        <!-- table -->
+        <div style="flex:1;min-height:0;overflow:auto;border-top:1px solid var(--color-divider);margin:0 16px 16px;position:relative">
+          <table class="table" style="table-layout:fixed;min-width:1040px">
+            <colgroup><col style="width:78px"><col style="width:92px"><col style="width:20%"><col style="width:22%"><col style="width:96px"><col style="width:64px"><col style="width:104px"><col style="width:172px"><col style="width:150px"></colgroup>
+            <thead style="position:sticky;top:0;z-index:2">
+              <tr style="background:var(--header-bg)">
+                <th onClick="{{ sortId }}" style="cursor:pointer;background:var(--header-bg)">row_id{{ indId }}</th>
+                <th style="background:var(--header-bg)">период</th>
+                <th onClick="{{ sortClient }}" style="cursor:pointer;background:var(--header-bg)">клиент{{ indClient }}</th>
+                <th onClick="{{ sortMaterial }}" style="cursor:pointer;background:var(--header-bg)">материал{{ indMaterial }}</th>
+                <th style="background:var(--header-bg)">сделка</th>
+                <th style="background:var(--header-bg)">вал.</th>
+                <th onClick="{{ sortVol }}" style="cursor:pointer;text-align:right;background:var(--header-bg)">объём, т{{ indVol }}</th>
+                <th style="background:var(--header-bg)">статус подбора</th>
+                <th onClick="{{ sortPrice }}" style="cursor:pointer;text-align:right;background:var(--header-bg)">итоговая цена{{ indPrice }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="14">
+                <tr onClick="{{ r.onClick }}" style="{{ r.rowStyle }}">
+                  <td class="mono" style="font-size:12.5px;opacity:.7">{{ r.id }}</td>
+                  <td class="mono" style="font-size:12.5px">{{ r.period }}</td>
+                  <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.client }}</td>
+                  <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.material }}</td>
+                  <td><span class="mono" style="{{ r.dealStyle }}">{{ r.deal }}</span></td>
+                  <td class="mono" style="font-size:12.5px">{{ r.cur }}</td>
+                  <td class="mono" style="text-align:right;font-size:12.5px">{{ r.vol }}</td>
+                  <td><span class="mono" style="{{ r.chipStyle }}"><span style="{{ r.dotStyle }}"></span>{{ r.statusLabel }}</span></td>
+                  <td class="mono" style="{{ r.priceStyle }}">{{ r.price }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center;padding:48px;color:var(--color-text)">
+              <div class="text-muted mono" style="font-size:13px">Нет строк под текущий фильтр.</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- ═══ DECODE DIALOG ═══ -->
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+      <div class="dialog-backdrop" style="z-index:35" onClick="{{ closePanel }}">
+      <div class="blueprint" style="width:min(600px,94vw);max-height:88vh;background:var(--panel);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)" onClick="{{ stop }}">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="padding:14px 18px;border-bottom:1px solid var(--color-divider);flex:none">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+            <div>
+              <div class="mono" style="font-size:11px;color:var(--color-accent);letter-spacing:.06em">РАСШИФРОВКА · {{ sel.id }}</div>
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:19px;line-height:1.15;margin-top:2px">{{ sel.material }}</div>
+            </div>
+            <button onClick="{{ closePanel }}" class="btn btn-secondary" style="width:32px;height:32px;padding:0;flex:none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:10px;font-size:12.5px">
+            <div><span class="text-muted">Клиент</span> <b style="font-weight:500">{{ sel.client }}</b></div>
+            <div><span class="text-muted">Период</span> <b class="mono" style="font-weight:500">{{ sel.period }}</b></div>
+            <div><span class="text-muted">Сделка</span> <b class="mono" style="font-weight:500">{{ sel.deal }}</b></div>
+            <div><span class="text-muted">Валюта</span> <b class="mono" style="font-weight:500">{{ sel.cur }}</b></div>
+            <div><span class="text-muted">Объём</span> <b class="mono" style="font-weight:500">{{ sel.vol }} т</b></div>
+          </div>
+          <span class="mono" style="{{ sel.chipStyle }};margin-top:10px"><span style="{{ sel.dotStyle }}"></span>{{ sel.statusLabel }}</span>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow:auto;padding:16px 18px">
+
+          <sc-if value="{{ sel.noFormula }}" hint-placeholder-val="{{ false }}">
+            <div class="blueprint" style="padding:16px;background:var(--st-warn-bg);border-color:transparent">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:16px;color:var(--st-warn);margin-bottom:4px">Формула не подобрана</div>
+              <p style="font-size:13px;margin:0;opacity:.85">Для сочетания «клиент × материал × период» нет действующей договорной формулы. Строка сохранена без цены — задайте формулу в справочнике или введите значение вручную ниже.</p>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ sel.hasFormula }}" hint-placeholder-val="{{ true }}">
+          <div class="mono text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Применённая формула · {{ sel.formulaCode }}</div>
+          <div class="blueprint mono" style="padding:14px;background:var(--color-accent-100);font-size:13px;line-height:1.7;word-break:break-word;color:var(--color-text)">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            {{ sel.formulaText }}
+          </div>
+          <sc-if value="{{ sel.isExpired }}" hint-placeholder-val="{{ false }}">
+            <div class="mono" style="font-size:11.5px;margin-top:8px;color:var(--st-err);display:flex;align-items:center;gap:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Формула истекла 31.05.2026 — действующей формулы на период 06.2026 нет
+            </div>
+          </sc-if>
+
+          <div class="mono text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin:18px 0 6px">Компоненты · подстановка значений</div>
+          <div class="blueprint" style="background:var(--panel);overflow:hidden">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <table class="table" style="font-size:12.5px">
+              <thead><tr><th>перем.</th><th>тип</th><th style="text-align:right">значение</th><th>источник · дата</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ sel.comps }}" as="c" hint-placeholder-count="6">
+                  <tr>
+                    <td class="mono" style="font-weight:500">{{ c.name }}</td>
+                    <td><span class="mono" style="{{ c.typeStyle }}">{{ c.type }}</span></td>
+                    <td class="mono" style="text-align:right;{{ c.valStyle }}">{{ c.value }}</td>
+                    <td style="font-size:11px;line-height:1.35"><div>{{ c.source }}</div><div class="mono text-muted">{{ c.date }}</div></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ sel.hasMulti }}" hint-placeholder-val="{{ false }}">
+            <div class="blueprint" style="margin-top:18px;padding:14px;background:var(--st-multi-bg);border-color:transparent">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;color:var(--st-multi)">Подошло несколько формул ({{ sel.multiCount }})</div>
+                <button onClick="{{ openModal }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:30px;padding:0 12px;font-family:var(--font-heading);font-weight:600;font-size:12.5px;cursor:pointer" style-hover="background:var(--action-600)">Выбрать формулу</button>
+              </div>
+              <p style="font-size:12.5px;margin:6px 0 0;opacity:.85">По умолчанию применена самая новая. Можно переключить — итоговая цена и сводные KPI пересчитаются.</p>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- final price + manual -->
+        <div style="border-top:1px solid var(--color-divider);padding:14px 18px;flex:none;background:var(--panel)">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+            <div>
+              <div class="mono text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase">Итоговая цена</div>
+              <div class="mono" style="font-size:30px;font-weight:600;line-height:1.05;color:{{ sel.priceColor }}">{{ sel.finalPrice }}</div>
+              <div class="mono text-muted" style="font-size:11px">{{ sel.priceNote }}</div>
+            </div>
+            <sc-if value="{{ sel.isManual }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ resetManual }}" class="btn btn-secondary" style="height:32px;font-size:12px">Сбросить правку</button>
+            </sc-if>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-start">
+            <div style="flex:1">
+              <input class="input mono" value="{{ draft }}" onInput="{{ onDraft }}" placeholder="Ручная цена, {{ sel.cur }}" style="height:38px;{{ draftBorder }}">
+              <sc-if value="{{ hasDraftErr }}" hint-placeholder-val="{{ false }}">
+                <div class="mono" style="font-size:11px;color:var(--bad);margin-top:4px">{{ draftErr }}</div>
+              </sc-if>
+            </div>
+            <button onClick="{{ applyManual }}" class="btn" style="height:38px;background:var(--color-accent);color:var(--color-bg);border-color:var(--color-accent);font-size:13px;padding:0 16px">Применить</button>
+          </div>
+        </div>
+      </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ═══════════ CONSOLIDATED DOCUMENT ═══════════ -->
+    <sc-if value="{{ isConsolidated }}" hint-placeholder-val="{{ false }}">
+    <div style="height:100%;overflow:auto">
+      <div style="max-width:1240px;margin:0 auto;padding:22px 24px 64px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px">
+          <div style="flex:1;min-width:0">
+            <div class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);margin-bottom:4px">Расчётный период · Июнь 2026</div>
+            <h2 style="margin:0;font-size:30px;white-space:nowrap">Сводный документ за период</h2>
+          </div>
+          <button onClick="{{ exportExcel }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:42px;padding:0 20px;font-family:var(--font-heading);font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px" style-hover="background:var(--action-600);border-color:var(--action-600)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Выгрузить весь документ
+          </button>
+        </div>
+        <p class="text-muted" style="font-size:14px;max-width:760px;margin-bottom:18px">Документ собирается из участков нескольких аналитиков. Каждый работает со своей частью, проверяет и присоединяет её к сводной таблице за период. Ниже — общая картина и полная таблица из всех присоединённых частей.</p>
+
+        <!-- draft banner -->
+        <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ false }}">
+          <div class="blueprint" style="background:var(--st-warn-bg);border-color:transparent;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--st-warn)" stroke-width="1.6" style="flex:none"><path d="m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4m0 4h.01"/></svg>
+            <div style="flex:1;font-size:13.5px"><b style="font-weight:600">Ваш участок ещё не присоединён.</b> Он показан ниже как черновик и не войдёт в итоговую выгрузку, пока вы не сохраните его.</div>
+            <button onClick="{{ saveMyPart }}" style="background:var(--action);color:#fff;border:1px solid var(--action);height:34px;padding:0 15px;font-family:var(--font-heading);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap" style-hover="background:var(--action-600)">Присоединить мой участок</button>
+          </div>
+        </sc-if>
+
+        <!-- consolidated KPI -->
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:24px">
+          <sc-for list="{{ consKpis }}" as="k" hint-placeholder-count="4">
+            <div class="blueprint" style="background:var(--panel);padding:12px 14px">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="mono text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">{{ k.label }}</div>
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <div class="mono" style="font-size:26px;font-weight:600;line-height:1;color:{{ k.color }}">{{ k.value }}</div>
+                <div style="font-size:12px;opacity:.65">{{ k.sub }}</div>
+              </div>
+              <div style="height:4px;background:var(--color-surface);margin-top:9px"><div style="height:100%;width:{{ k.bar }};background:{{ k.color }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- combined table -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <h4 style="margin:0;font-size:17px">Полная таблица документа</h4>
+          <span class="mono text-muted" style="font-size:12px">строки со всех участков</span>
+        </div>
+        <div class="blueprint" style="background:var(--panel);max-height:52vh;overflow:auto">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <table class="table" style="table-layout:fixed;min-width:1000px">
+            <colgroup><col style="width:160px"><col style="width:78px"><col style="width:16%"><col style="width:20%"><col style="width:88px"><col style="width:56px"><col style="width:96px"><col style="width:150px"><col style="width:140px"></colgroup>
+            <thead style="position:sticky;top:0;z-index:2">
+              <tr style="background:var(--header-bg)">
+                <th style="background:var(--header-bg)">аналитик / участок</th>
+                <th style="background:var(--header-bg)">row_id</th>
+                <th style="background:var(--header-bg)">клиент</th>
+                <th style="background:var(--header-bg)">материал</th>
+                <th style="background:var(--header-bg)">сделка</th>
+                <th style="background:var(--header-bg)">вал.</th>
+                <th style="text-align:right;background:var(--header-bg)">объём, т</th>
+                <th style="background:var(--header-bg)">статус</th>
+                <th style="text-align:right;background:var(--header-bg)">итоговая цена</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ consRows }}" as="r" hint-placeholder-count="14">
+                <tr style="{{ r.rowStyle }}">
+                  <td style="overflow:hidden"><span class="mono" style="{{ r.analystStyle }}">{{ r.analystLabel }}</span></td>
+                  <td class="mono" style="font-size:12.5px;opacity:.7">{{ r.id }}</td>
+                  <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.client }}</td>
+                  <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.material }}</td>
+                  <td><span class="mono" style="{{ r.dealStyle }}">{{ r.deal }}</span></td>
+                  <td class="mono" style="font-size:12.5px">{{ r.cur }}</td>
+                  <td class="mono" style="text-align:right;font-size:12.5px">{{ r.vol }}</td>
+                  <td><span class="mono" style="{{ r.chipStyle }}"><span style="{{ r.dotStyle }}"></span>{{ r.statusLabel }}</span></td>
+                  <td class="mono" style="{{ r.priceStyle }}">{{ r.price }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <!-- ═══ FORMULA MODAL ═══ -->
+  <sc-if value="{{ showModal }}" hint-placeholder-val="{{ false }}">
+  <div class="dialog-backdrop" style="z-index:40" onClick="{{ closeModal }}">
+    <div class="dialog blueprint" style="width:min(620px,94vw);background:var(--panel);max-height:86vh;overflow:auto" onClick="{{ stop }}">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div>
+          <div class="mono" style="font-size:11px;color:var(--color-accent);letter-spacing:.06em">{{ sel.id }} · {{ sel.material }}</div>
+          <div class="dialog-title" style="font-size:22px">Выбор договорной формулы</div>
+        </div>
+        <button onClick="{{ closeModal }}" class="btn btn-secondary" style="width:32px;height:32px;padding:0;flex:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-muted" style="font-size:13px;margin:0">Найдено {{ sel.multiCount }} действующих формулы. Выберите применяемую — цена строки и KPI пересчитаются.</p>
+      <div style="display:grid;gap:10px;margin-top:4px">
+        <sc-for list="{{ sel.altFormulas }}" as="a" hint-placeholder-count="3">
+          <div onClick="{{ a.onClick }}" class="blueprint" style="{{ a.cardStyle }}">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="{{ a.radioStyle }}"></span>
+                  <span class="mono" style="font-weight:600;font-size:13px">{{ a.code }}</span>
+                  <span class="mono" style="{{ a.tagStyle }}">{{ a.tag }}</span>
+                </div>
+                <div class="mono text-muted" style="font-size:11.5px;margin:5px 0 0 22px">Действует: {{ a.validity }}</div>
+                <div class="mono" style="font-size:11.5px;margin:6px 0 0 22px;opacity:.85;word-break:break-word">{{ a.text }}</div>
+              </div>
+              <div style="text-align:right;flex:none">
+                <div class="mono" style="font-size:19px;font-weight:600;color:{{ a.priceColor }}">{{ a.price }}</div>
+                <div class="mono" style="font-size:10.5px;{{ a.matchStyle }}">{{ a.match }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div class="dialog-actions">
+        <button onClick="{{ closeModal }}" class="btn btn-secondary" style="height:40px">Отмена</button>
+        <button onClick="{{ confirmModal }}" class="btn" style="height:40px;background:var(--action);color:#fff;border-color:var(--action)">Применить выбранную</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- toast -->
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div class="mono" style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--color-accent);color:var(--color-bg);padding:11px 18px;font-size:13px;box-shadow:var(--shadow-lg);z-index:60;display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6 9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;720px&quot;},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;}}">
+class Component extends DCLogic {
+  constructor(p){
+    super(p);
+    const rows = this.build();
+    this.others = this.buildOthers();
+    this.state = {
+      theme: p.defaultTheme || 'light',
+      screen: 'upload', uploaded: false, progress: 0,
+      rows, activeF: {}, resolved: {}, manual: {},
+      selId: null, modal: false, modalPick: null,
+      filter: 'all', query: '', sortKey: 'id', sortDir: 1,
+      draft: '', draftErr: '', toast: '',
+      chkA: true, submitted: false, submittedAt: ''
+    };
+  }
+  componentWillUnmount(){ clearInterval(this.tick); clearTimeout(this.toastT); }
+
+  build(){
+    let s = 20260601;
+    const R = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    const pick = a => a[Math.floor(R() * a.length)];
+    const MAT = [
+      ['Полиэтилен ПВД 15803-020','Полиолефины',92400],
+      ['Полипропилен ПП 1525','Полиолефины',108600],
+      ['Полиэтилен ПНД 273-83','Полиолефины',96200],
+      ['Полистирол УПМ-0508','Стиролы и каучуки',121500],
+      ['Стирол мономер','Стиролы и каучуки',98700],
+      ['Каучук СКД-НД','Стиролы и каучуки',147300],
+      ['Бензол нефтяной','Ароматика',74200],
+      ['Толуол нефтяной','Ароматика',68900],
+      ['Ортоксилол','Ароматика',81400],
+      ['МЭГ (моноэтиленгликоль)','Гликоли и оксиды',89600],
+      ['ПЭТФ гранулят Т-96','Гликоли и оксиды',112800],
+      ['Бутадиен-1,3','Стиролы и каучуки',103400]
+    ];
+    const CLI = ['Полимер-Пласт','Химторг-Волга','Сибпласт','АгроХим Ресурс','ТД Упаковка','Уралтара','НефтеХимТрейд','Каспий Полимер','Балтпласт','ЭкоПак Групп','Мега-Полимер','ЮгХим'];
+    const QUO = ['CPT_MOSCOW_PE','FOB_ROTTERDAM_PP','ICIS_STYRENE','PLATTS_BENZENE','DDP_NWE_PS','FCA_KAZAN_PP','CFR_CHINA_MEG'];
+    const CUR = ['₽','₽','₽','$','€'];
+    // status plan guarantees every type appears
+    const plan = {3:'no_formula',17:'no_formula',6:'missing_quote',22:'missing_quote',31:'missing_quote',4:'multi',12:'multi',27:'multi',38:'multi',9:'manual',20:'manual',14:'expired',25:'expired',34:'expired'};
+    const rows = [];
+    const fmt = (n,d=2)=> n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+    for (let i=0;i<42;i++){
+      const m = MAT[Math.floor(R()*MAT.length)];
+      const client = pick(CLI);
+      const deal = R() < 0.72 ? 'Formula' : 'SPOT';
+      const cur = pick(CUR);
+      const vol = Math.round((15 + R()*640)) * 5;
+      const ref = Math.round(m[2] * (0.9 + R()*0.22));
+      const status = plan[i] || 'ok';
+      const qcode = pick(QUO);
+      const date = '15.06.2026';
+      const L=3200, H1=1.05;
+      const noise = 1 + (R()*0.09 - 0.045);
+      const spot = Math.round(ref*1.15);
+      const fx = cur==='$'?89.42:cur==='€'?97.15:1;
+      const mkF = (code,d,tag,validity,missing) => {
+        const Dv=d;
+        const q = missing ? null : Math.round((ref*H1/0.98 + L) * noise);
+        const result = missing ? null : Math.min(Math.round((q-L)/H1*Dv), spot);
+        const comps = [];
+        comps.push({name:qcode, type:'Котировка', value: missing?'— нет':fmt(q), source:'Котировки.xlsx', date: missing?'нет на 15.06.2026':date, missing});
+        comps.push({name:'L', type:'Логистика', value:fmt(L), source:'Компоненты формул.xlsx', date:'—'});
+        comps.push({name:'H1', type:'Константа', value:'1,05000', source:'Типы термов.xlsx', date:'—'});
+        comps.push({name:'D', type:'Надбавка', value:fmt(Dv,4), source:'Компоненты формул.xlsx', date:'—'});
+        if (cur!=='₽') comps.push({name: cur==='$'?'USD/RUB':'EUR/RUB', type:'Курс', value:fmt(fx,4), source:'Курсы валют.xlsx', date});
+        comps.push({name:'SPOT', type:'Котировка', value:fmt(spot), source:'Котировки.xlsx (спот)', date});
+        const text = deal==='Formula'
+          ? `IF ( ((${qcode} − L)/H1)×D < SPOT , ((${qcode} − L)/H1)×D , SPOT )`
+          : `SPOT × ${cur==='₽'?'1':(cur==='$'?'USD_RUB':'EUR_RUB')} × D + L`;
+        return {code, tag, validity, text, comps, result, missing};
+      };
+      let formulas = [];
+      if (status==='no_formula') { formulas = []; }
+      else if (status==='multi') {
+        const n = 2 + (R()<0.4?1:0);
+        formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'новая','01.06.2026 — 30.06.2026',false));
+        formulas.push(mkF('Ф-2026-'+(1100+i),0.94,'предыдущая','01.03.2026 — 31.05.2026',false));
+        if (n===3) formulas.push(mkF('Ф-2025-'+(880+i),1.02,'спец. условие','01.01.2026 — 30.06.2026',false));
+      }
+      else if (status==='missing_quote') { formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'новая','01.06.2026 — 30.06.2026',true)); }
+      else if (status==='expired') { const ef=mkF('Ф-2026-'+(1400+i),0.98,'истекла','01.02.2026 — 31.05.2026 (истекла)',false); ef.result=null; ef.expired=true; formulas.push(ef); }
+      else { formulas.push(mkF('Ф-2026-'+(1400+i),0.98,'новая','01.06.2026 — 30.06.2026',false)); }
+      const manualVal = status==='manual' ? Math.round(ref*(0.97+R()*0.06)) : null;
+      rows.push({ id:'FR-'+String(60481+i), period:'06.2026', client, material:m[0], group:m[1], deal, cur, vol, ref, status, formulas, manualVal });
+    }
+    return rows;
+  }
+
+  buildOthers(){
+    let s = 777001;
+    const R = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    const pick = a => a[Math.floor(R() * a.length)];
+    const CLI = ['Полимер-Пласт','Химторг-Волга','АгроХим Ресурс','ТД Упаковка','НефтеХимТрейд','Каспий Полимер','Балтпласт','ЭкоПак Групп','Мега-Полимер','ЮгХим'];
+    const CUR = ['₽','₽','₽','$','€'];
+    const mk = (analyst, group, mats, n, startId, errAt) => {
+      const rows = [];
+      for (let i=0;i<n;i++){
+        const m = pick(mats), client = pick(CLI);
+        const deal = R()<0.75?'Formula':'SPOT';
+        const cur = pick(CUR);
+        const vol = Math.round((15+R()*500))*5;
+        const ref = Math.round(m[1]*(0.9+R()*0.2));
+        const err = errAt.indexOf(i)>=0;
+        const status = err ? (i%2 ? 'missing_quote':'no_formula') : (R()<0.12?'manual':'ok');
+        const price = (status==='missing_quote'||status==='no_formula') ? null : Math.round(ref*(1+(R()*0.08-0.04)));
+        rows.push({ analyst, group, id:'FR-'+(startId+i), period:'06.2026', client, material:m[0], deal, cur, vol, status, price, ref });
+      }
+      return rows;
+    };
+    const arom = [['Бензол нефтяной',74200],['Толуол нефтяной',68900],['Ортоксилол',81400],['МЭГ (моноэтиленгликоль)',89600],['ПЭТФ гранулят Т-96',112800]];
+    const rub = [['Каучук СКД-НД',147300],['Бутадиен-1,3',103400],['Латекс СКС-30',96500],['Стирол мономер',98700]];
+    return {
+      petrov: mk('И. Петров','Ароматика и гликоли',arom,16,60601,[5,12]),
+      kozlova: mk('М. Козлова','Каучуки и латексы',rub,13,60701,[8])
+    };
+  }
+
+  // ── helpers ──
+  fmt(n,d=2){ return n==null?'—':n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+  fmt0(n){ return n==null?'—':Math.round(n).toLocaleString('ru-RU'); }
+
+  effStatus(r){ if (this.state.manual[r.id]!=null) return 'manual'; if (r.status==='multi' && this.state.resolved[r.id]) return 'ok'; return r.status; }
+  activeIdx(r){ return this.state.activeF[r.id] ?? 0; }
+  effPrice(r){
+    if (this.state.manual[r.id]!=null) return this.state.manual[r.id];
+    if (!r.formulas.length) return null;
+    return r.formulas[this.activeIdx(r)].result;
+  }
+  isMatched(r){ const p=this.effPrice(r); if (p==null) return false; return Math.abs(p-r.ref)/r.ref <= 0.03; }
+
+  statusMeta(v){
+    const M = {
+      ok:['Посчитано','ok'], expired:['Формула истекла','err'], multi:['Выбрать формулу','multi'],
+      manual:['Правка вручную','manual'], no_formula:['Нет цены','warn'], missing_quote:['Нет котировки','err']
+    };
+    const key = v;
+    const e = M[key] || M.ok;
+    const c = e[1];
+    return { label:e[0],
+      chip:`display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 9px;color:var(--st-${c});background:var(--st-${c}-bg);white-space:nowrap`,
+      dot:`width:6px;height:6px;border-radius:50%;background:var(--st-${c});flex:none` };
+  }
+
+  setTheme(){ this.setState(s=>({theme:s.theme==='light'?'dark':'light'})); }
+  goTo(screen){ if (screen!=='computing') this.setState({screen}); }
+  doLoad(){ this.setState({uploaded:true}); }
+  doCompute(){
+    this.setState({screen:'computing',progress:0});
+    clearInterval(this.tick);
+    this.tick = setInterval(()=>{
+      this.setState(st=>{
+        const p = Math.min(100, st.progress + 5 + Math.random()*11);
+        if (p>=100){ clearInterval(this.tick); this.toastT=setTimeout(()=>this.setState({screen:'results'}),340); }
+        return {progress:p};
+      });
+    },150);
+  }
+  fireToast(t){ this.setState({toast:t}); clearTimeout(this.toastT2); this.toastT2=setTimeout(()=>this.setState({toast:''}),2600); }
+
+  renderVals(){
+    const st = this.state;
+    const ST = { fmt:this.fmt.bind(this) };
+    const steps = [
+      {k:'upload',n:'1',label:'Данные'},
+      {k:'results',n:'2',label:'Результаты'}
+    ].map(x=>{
+      const active = st.screen===x.k || (x.k==='results'&&st.screen==='computing');
+      return { num:x.n, label:x.label,
+        onClick:()=>{ if (x.k==='results'&&!st.uploaded) return; this.goTo(x.k); },
+        style:`display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border:1px solid ${active?'var(--color-accent)':'transparent'};background:${active?'var(--color-accent-100)':'transparent'};color:var(--color-text);font-family:var(--font-heading);font-weight:600;font-size:13.5px;cursor:pointer`,
+        numStyle:`width:19px;height:19px;display:grid;place-items:center;font-size:11px;background:${active?'var(--color-accent)':'var(--color-divider)'};color:${active?'var(--color-bg)':'var(--color-text)'}` };
+    });
+
+    // user-uploaded sources (only 2)
+    const srcDefs = [
+      ['Прогноз спроса','ssp.xlsx',4812,'ok'],
+      ['Каталог формул','formulas.xlsx',1284,'ok']
+    ];
+    // reference books pulled from the service (not uploaded by user)
+    const refDefs = [
+      ['Компоненты формул','components.xlsx',3960],
+      ['Типы термов','term_types.xlsx',48],
+      ['Котировки','quotes.xlsx',9120],
+      ['Маппинг котировок','quote_map.xlsx',612],
+      ['Курсы валют','fx_rates.xlsx',744],
+      ['Группы материалов','mat_groups.xlsx',196]
+    ];
+    const chip = (v)=>{
+      const c = v==='ok'?'ok':v==='warn'?'warn':'err';
+      return `display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;color:var(--st-${c});background:var(--st-${c}-bg);flex:none`;
+    };
+    const sources = srcDefs.map(d=>({ name:d[0], file:d[1], rowsLabel:d[2].toLocaleString('ru-RU')+' строк',
+      icon:'▦', iconColor: d[3]==='ok'?'var(--color-accent)':'var(--st-warn)',
+      statusLabel: d[3]==='ok'?'загружен':'2 дубля',
+      chipStyle: chip(d[3]) }));
+    const refs = refDefs.map(d=>({ name:d[0], file:d[1], rowsLabel:d[2].toLocaleString('ru-RU')+' строк' }));
+
+    const preview = st.rows.slice(0,5).map(r=>({ id:r.id, period:r.period, client:r.client, material:r.material, vol:this.fmt0(r.vol), deal:r.deal }));
+
+    // ── results dataset ──
+    let list = st.rows.slice();
+    const q = st.query.trim().toLowerCase();
+    if (q) list = list.filter(r=> (r.client+' '+r.material+' '+r.id).toLowerCase().includes(q));
+    if (st.filter!=='all') list = list.filter(r=> this.effStatus(r)===st.filter);
+    const dir = st.sortDir;
+    const key = st.sortKey;
+    list.sort((a,b)=>{
+      let va,vb;
+      if (key==='price'){ va=this.effPrice(a)??-1; vb=this.effPrice(b)??-1; }
+      else if (key==='vol'){ va=a.vol; vb=b.vol; }
+      else if (key==='client'){ va=a.client; vb=b.client; }
+      else if (key==='material'){ va=a.material; vb=b.material; }
+      else { va=a.id; vb=b.id; }
+      if (va<vb) return -1*dir; if (va>vb) return 1*dir; return 0;
+    });
+    const rows = list.map(r=>{
+      const es = this.effStatus(r);
+      const m = this.statusMeta(es);
+      const p = this.effPrice(r);
+      const sel = st.selId===r.id;
+      const priceColor = p==null?'var(--st-warn)':(this.isMatched(r)?'var(--st-ok)':'var(--color-text)');
+      return { id:r.id, period:r.period, client:r.client, material:r.material, deal:r.deal, cur:r.cur,
+        vol:this.fmt0(r.vol), price: p==null?'нет цены':this.fmt(p),
+        statusLabel:m.label, chipStyle:m.chip, dotStyle:m.dot,
+        dealStyle:`font-size:11px;padding:2px 7px;border:1px solid var(--color-divider);color:${r.deal==='SPOT'?'var(--action)':'var(--color-accent)'}`,
+        priceStyle:`text-align:right;font-size:13.5px;font-weight:600;color:${priceColor}`,
+        rowStyle:`cursor:pointer;background:${sel?'var(--color-accent-100)':'transparent'};box-shadow:${sel?'inset 3px 0 0 var(--color-accent)':'none'}`,
+        onClick:()=> this.setState(s=>({ selId: s.selId===r.id?null:r.id, modal:false, draft:'', draftErr:'' })) };
+    });
+
+    // KPI over all rows
+    const all = st.rows;
+    const priced = all.filter(r=> this.effPrice(r)!=null);
+    const withPricePct = Math.round(priced.length/all.length*100);
+    const matchedCount = priced.filter(r=> this.isMatched(r)).length;
+    const matchPct = priced.length? Math.round(matchedCount/priced.length*100):0;
+    const errCount = all.filter(r=> this.effStatus(r)==='missing_quote' || this.effStatus(r)==='no_formula').length;
+    const col = (v,g,m)=> v>=g?'var(--good)': v>=m?'var(--mid)':'var(--bad)';
+    const kpis = [
+      { label:'Строк с ценой', value:withPricePct+'%', sub:priced.length+' из '+all.length, color:col(withPricePct,90,75), bar:withPricePct+'%' },
+      { label:'Совпало с эталоном ±3%', value:matchPct+'%', sub:matchedCount+' строк', color:col(matchPct,85,70), bar:matchPct+'%' },
+      { label:'Ошибок по строкам', value:String(errCount), sub:'требуют внимания', color: errCount===0?'var(--good)':errCount<=4?'var(--mid)':'var(--bad)', bar: Math.min(100,errCount*14)+'%' },
+      { label:'Прогресс расчёта', value:'100%', sub:all.length+' строк', color:'var(--good)', bar:'100%' }
+    ];
+
+    // filters
+    const counts = { all:all.length };
+    ['ok','expired','multi','manual','no_formula','missing_quote'].forEach(k=> counts[k]= all.filter(r=> this.effStatus(r)===k).length);
+    const fdef = [['all','Все'],['ok','Посчитано'],['multi','Выбрать'],['no_formula','Нет цены'],['missing_quote','Нет котир.'],['manual','Правка'],['expired','Истекла']];
+    const filters = fdef.map(f=>{
+      const act = st.filter===f[0];
+      return { label:f[1], count:counts[f[0]]||0,
+        onClick:()=> this.setState({filter:f[0]}),
+        style:`display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;font-size:12px;cursor:pointer;border:1px solid ${act?'var(--color-accent)':'var(--color-divider)'};background:${act?'var(--color-accent-100)':'transparent'};color:var(--color-text)`,
+        countStyle:`font-size:10.5px;padding:0 5px;background:${act?'var(--color-accent)':'var(--color-divider)'};color:${act?'var(--color-bg)':'var(--color-text)'}` };
+    });
+    const ind = k=> st.sortKey===k ? (st.sortDir===1?' ▲':' ▼') : '';
+    const sortBy = k=> this.setState(s=>({ sortKey:k, sortDir: s.sortKey===k? -s.sortDir:1 }));
+
+    // ── selected / decode ──
+    const r = st.rows.find(x=> x.id===st.selId);
+    let sel = null;
+    if (r){
+      const es = this.effStatus(r);
+      const m = this.statusMeta(es);
+      const idx = this.activeIdx(r);
+      const f = r.formulas[idx];
+      const p = this.effPrice(r);
+      const typeStyle = t=>{ const c = t==='Котировка'?'ok':t==='Курс'?'ext':t==='Логистика'?'multi':'manual'; return `font-size:10.5px;padding:2px 7px;color:var(--st-${c});background:var(--st-${c}-bg)`; };
+      const comps = f ? f.comps.map(c=>({ name:c.name, type:c.type, value:c.value, source:c.source, date:c.date,
+        typeStyle: typeStyle(c.type),
+        valStyle: c.missing?'color:var(--bad);font-weight:600':'font-weight:500' })) : [];
+      const isManual = st.manual[r.id]!=null;
+      const hasMulti = r.status==='multi' && !st.resolved[r.id];
+      const priceNote = isManual ? 'Введено вручную · эталон '+this.fmt(r.ref)
+        : p==null ? (r.formulas.length? 'Нет котировки на дату':'Формула не подобрана')
+        : (this.isMatched(r)?'В пределах ±3% от эталона':'Отклонение от эталона >3% ('+this.fmt(r.ref)+')');
+      const pickIdx = st.modal ? (st.modalPick ?? idx) : idx;
+      const altFormulas = r.formulas.map((af,i)=>{
+        const active = i===pickIdx;
+        const matched = af.result!=null && Math.abs(af.result-r.ref)/r.ref<=0.03;
+        return { code:af.code, tag:af.tag, text:af.text,
+          validity:af.validity, price: af.result==null?'нет котировки':this.fmt(af.result),
+          priceColor: af.result==null?'var(--st-warn)':(matched?'var(--st-ok)':'var(--color-text)'),
+          match: af.result==null?'—':(matched?'±3% ✓':'>3%'),
+          matchStyle:`color:${af.result==null?'var(--st-warn)':(matched?'var(--st-ok)':'var(--st-multi)')}`,
+          tagStyle:`font-size:10px;padding:1px 7px;color:var(--st-ext);background:var(--st-ext-bg)`,
+          cardStyle:`padding:12px 14px;cursor:pointer;background:${active?'var(--color-accent-100)':'var(--panel)'};border-color:${active?'var(--color-accent)':'var(--color-divider)'}`,
+          radioStyle:`width:14px;height:14px;border-radius:50%;border:1.5px solid ${active?'var(--color-accent)':'var(--color-divider)'};background:${active?'var(--color-accent)':'transparent'};box-shadow:${active?'inset 0 0 0 3px var(--panel)':'none'};flex:none`,
+          onClick:()=> this.setState({modalPick:i}) };
+      });
+      sel = { id:r.id, client:r.client, material:r.material, period:r.period, deal:r.deal, cur:r.cur, vol:this.fmt0(r.vol),
+        statusLabel:m.label, chipStyle:m.chip, dotStyle:m.dot,
+        noFormula: r.formulas.length===0, hasFormula: r.formulas.length>0,
+        formulaCode: f?f.code:'', formulaText: f?f.text:'', isExpired: r.status==='expired',
+        comps, hasMulti, multiCount: r.formulas.length,
+        isManual, altFormulas,
+        finalPrice: p==null?'нет цены':this.fmt(p)+' '+r.cur,
+        priceColor: p==null?'var(--st-warn)':(this.isMatched(r)?'var(--st-ok)':'var(--color-text)'),
+        priceNote };
+    }
+
+    const draftBorder = st.draftErr ? 'border-color:var(--bad)' : '';
+
+    // ── params checkboxes ──
+    const mkChk = (on, toggle) => ({
+      onClick: toggle,
+      box:`width:18px;height:18px;flex:none;display:grid;place-items:center;border:1.5px solid ${on?'var(--color-accent)':'var(--color-divider)'};background:${on?'var(--color-accent)':'transparent'}`,
+      tick:`opacity:${on?1:0};color:var(--color-bg)`
+    });
+    const chkA = mkChk(st.chkA, ()=> this.setState(s=>({chkA:!s.chkA})));
+
+    // ── consolidated document ──
+    const partStatusMeta = { joined:['Присоединено','ok'], draft:['Черновик','warn'], review:['На проверке','multi'] };
+    const mineRows = st.rows.map(r=>({ analyst:'А. Смирнов', group:'Ваш участок', id:r.id, period:r.period, client:r.client, material:r.material, deal:r.deal, cur:r.cur, vol:r.vol, status:this.effStatus(r), price:this.effPrice(r), ref:r.ref, mine:true, partStatus: st.submitted?'joined':'draft' }));
+    const withPart = (arr,ps)=> arr.map(x=>({...x, mine:false, partStatus:ps}));
+    const petrov = withPart(this.others.petrov,'joined');
+    const kozlova = withPart(this.others.kozlova,'review');
+    const partDefs = [
+      { name:'А. Смирнов', tagYou:true, group:'Ваш участок · 12 материалов', rows:mineRows, status: st.submitted?'joined':'draft', at: st.submitted? st.submittedAt : 'не сохранено' },
+      { name:'И. Петров', tagYou:false, group:'Ароматика и гликоли', rows:petrov, status:'joined', at:'20.07.2026, 14:12' },
+      { name:'М. Козлова', tagYou:false, group:'Каучуки и латексы', rows:kozlova, status:'review', at:'ожидает проверки' }
+    ];
+    const matchedOf = x=> x.price!=null && Math.abs(x.price-x.ref)/x.ref<=0.03;
+    const parts = partDefs.map(p=>{
+      const priced = p.rows.filter(r=>r.price!=null);
+      const cov = Math.round(priced.length/p.rows.length*100);
+      const psm = partStatusMeta[p.status];
+      return { name:p.name, tagYou:p.tagYou, group:p.group, count:p.rows.length, cov:cov+'%', at:p.at,
+        statusLabel:psm[0], statusStyle:`display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 10px;color:var(--st-${psm[1]});background:var(--st-${psm[1]}-bg)`,
+        covColor: cov>=90?'var(--good)':cov>=75?'var(--mid)':'var(--bad)',
+        cardStyle:`background:var(--panel);padding:15px 16px;${p.tagYou?'border-color:var(--color-accent)':''}`,
+        isMine:p.tagYou, isDraft:p.tagYou&&!st.submitted };
+    });
+    const allCons = [...mineRows, ...petrov, ...kozlova];
+    const consPriced = allCons.filter(r=>r.price!=null);
+    const consMatched = consPriced.filter(matchedOf).length;
+    const consErr = allCons.filter(r=>r.status==='missing_quote'||r.status==='no_formula').length;
+    const cc = (v,g,m)=> v>=g?'var(--good)':v>=m?'var(--mid)':'var(--bad)';
+    const cwp = Math.round(consPriced.length/allCons.length*100);
+    const cmp = consPriced.length?Math.round(consMatched/consPriced.length*100):0;
+    const consKpis = [
+      { label:'Всего строк в документе', value:String(allCons.length), sub:'из всех участков', color:'var(--color-accent)', bar:'100%' },
+      { label:'Строк с ценой', value:cwp+'%', sub:consPriced.length+' строк', color:cc(cwp,90,75), bar:cwp+'%' },
+      { label:'Совпало ±3%', value:cmp+'%', sub:consMatched+' строк', color:cc(cmp,85,70), bar:cmp+'%' }
+    ];
+    const consRows = allCons.map(r=>{
+      const m = this.statusMeta(r.status);
+      const draft = r.mine && !st.submitted;
+      return { analyst:r.analyst, id:r.id, client:r.client, material:r.material, deal:r.deal, cur:r.cur,
+        vol:this.fmt0(r.vol), price: r.price==null?'нет цены':this.fmt(r.price),
+        statusLabel:m.label, chipStyle:m.chip, dotStyle:m.dot,
+        analystStyle:`display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:11px;padding:2px 8px;color:var(--st-${draft?'warn':(r.mine?'ok':'ext')});background:var(--st-${draft?'warn':(r.mine?'ok':'ext')}-bg)`,
+        analystLabel: r.analyst + (r.mine?' (вы)':''),
+        dealStyle:`font-size:11px;padding:2px 7px;border:1px solid var(--color-divider);color:${r.deal==='SPOT'?'var(--action)':'var(--color-accent)'}`,
+        priceStyle:`text-align:right;font-size:13.5px;font-weight:600;color:${r.price==null?'var(--st-warn)':(matchedOf(r)?'var(--st-ok)':'var(--color-text)')}`,
+        rowStyle:`background:${r.mine?'var(--color-accent-100)':'transparent'};${draft?'opacity:.72':''};box-shadow:${r.mine?'inset 3px 0 0 var(--color-accent)':'none'}` };
+    });
+
+    const doApply = ()=>{
+      const raw = st.draft.replace(/\s/g,'').replace(',','.');
+      if (!raw) { this.setState({draftErr:'Введите цену'}); return; }
+      const v = Number(raw);
+      if (!isFinite(v) || isNaN(v)) { this.setState({draftErr:'Не число'}); return; }
+      if (v<=0) { this.setState({draftErr:'Цена должна быть > 0'}); return; }
+      this.setState(s=>({ manual:{...s.manual,[r.id]:Math.round(v*100)/100}, draft:'', draftErr:'' }));
+      this.fireToast('Ручная цена применена · KPI пересчитаны');
+    };
+
+    return {
+      theme: st.theme,
+      themeLabel: st.theme==='light'?'Тёмная':'Светлая',
+      themeIcon: st.theme==='light'?'◑':'◐',
+      toggleTheme: ()=> this.setTheme(),
+      steps,
+      isUpload: st.screen==='upload',
+      isComputing: st.screen==='computing', isResults: st.screen==='results',
+      isConsolidated: st.screen==='consolidated',
+      goConsolidated: ()=> this.goTo('consolidated'),
+      consTabStyle:`display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border:1px solid ${st.screen==='consolidated'?'var(--color-accent)':'var(--color-divider)'};background:${st.screen==='consolidated'?'var(--color-accent-100)':'transparent'};color:var(--color-text);font-family:var(--font-heading);font-weight:600;font-size:13px;cursor:pointer`,
+      chkA,
+      parts, consKpis, consRows,
+      submitted: st.submitted, notSubmitted: !st.submitted, submittedAt: st.submittedAt,
+      saveMyPart: ()=>{ const d=new Date(); const at=('0'+d.getDate()).slice(-2)+'.07.2026, '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); this.setState({submitted:true, submittedAt:at}); this.fireToast('Ваш участок сохранён и присоединён к сводному документу'); },
+      uploaded: st.uploaded, notUploaded: !st.uploaded,
+      sources, refs, preview,
+      goUpload: ()=> this.goTo('upload'),
+      doLoad: ()=> this.doLoad(), doCompute: ()=> this.doCompute(),
+      progressPct: Math.round(st.progress)+'%', progressRows: Math.round(4812*st.progress/100).toLocaleString('ru-RU'),
+      kpis, filters, rows, noRows: rows.length===0,
+      query: st.query, onQuery: e=> this.setState({query:e.target.value}),
+      indId:ind('id'), indClient:ind('client'), indMaterial:ind('material'), indVol:ind('vol'), indPrice:ind('price'),
+      sortId:()=>sortBy('id'), sortClient:()=>sortBy('client'), sortMaterial:()=>sortBy('material'), sortVol:()=>sortBy('vol'), sortPrice:()=>sortBy('price'),
+      hasSel: !!sel, sel: sel||{}, closePanel: ()=> this.setState({selId:null,modal:false}),
+      openModal: ()=> this.setState({modal:true, modalPick: this.activeIdx(r)}),
+      showModal: st.modal && !!sel,
+      closeModal: ()=> this.setState({modal:false}), stop: e=> e.stopPropagation(),
+      confirmModal: ()=>{ this.setState(s=>({ activeF:{...s.activeF,[r.id]: s.modalPick ?? 0}, resolved:{...s.resolved,[r.id]:true}, modal:false })); this.fireToast('Формула переключена · KPI пересчитаны'); },
+      draft: st.draft, draftErr: st.draftErr, hasDraftErr: !!st.draftErr, draftBorder,
+      onDraft: e=> this.setState({draft:e.target.value, draftErr:''}),
+      applyManual: doApply,
+      resetManual: ()=>{ this.setState(s=>{ const mm={...s.manual}; delete mm[r.id]; return {manual:mm}; }); this.fireToast('Ручная правка сброшена'); },
+      exportExcel: ()=> this.fireToast('Файл сформирован: prices_06-2026.xlsx'),
+      toast: st.toast, hasToast: !!st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

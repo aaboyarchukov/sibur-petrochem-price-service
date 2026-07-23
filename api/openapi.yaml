@@ -1,0 +1,1289 @@
+openapi: 3.0.3
+
+info:
+  title: sibur-petrochem-price-service API
+  description: |
+    Сервис расчёта цен на нефтехимическую продукцию.
+
+    Основной сценарий:
+    1. Загрузка источников (прогноз спроса `ssp.xlsx`, каталог формул `formulas.xlsx`;
+       остальные 6 справочников подтягиваются сервисом автоматически).
+    2. Запуск асинхронного расчёта за период.
+    3. Просмотр результатов: таблица строк, KPI, фильтры по статусам.
+    4. Расшифровка строки: формула, компоненты, альтернативные формулы.
+    5. Правки: ручная цена, выбор формулы из нескольких подходящих.
+    6. Сводный документ за период: участки аналитиков, присоединение своего участка.
+    7. Выгрузка результатов в Excel.
+  version: 0.1.0
+
+servers:
+  - url: /api/v1
+
+# MVP без аутентификации; авторизация добавится отдельной итерацией
+security: []
+
+tags:
+  - name: sources
+    description: Исходные данные — загрузка и статус источников
+  - name: calculations
+    description: Расчёты — запуск, прогресс, результаты, KPI
+  - name: rows
+    description: Строки расчёта — расшифровка и правки
+  - name: consolidated
+    description: Сводный документ за период — участки аналитиков
+  - name: formulas
+    description: Работа с выражениями формул — парсинг и валидация
+
+paths:
+
+  # ─────────────────────────── SOURCES ───────────────────────────
+
+  /sources:
+    get:
+      tags: [sources]
+      operationId: listSources
+      summary: Статус всех источников данных
+      description: |
+        Возвращает все 8 источников: 2 пользовательских (`ssp`, `formulas`)
+        и 6 справочников сервиса. Для каждого — статус загрузки и количество строк.
+      responses:
+        '200':
+          description: Список источников
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+
+  /sources/{sourceKey}/file:
+    post:
+      tags: [sources]
+      operationId: uploadSourceFile
+      summary: Загрузить файл источника
+      description: |
+        Загрузка Excel-файла источника (multipart). В MVP пользователь загружает
+        `ssp` и `formulas`; остальные источники доступны для перезаливки при необходимости.
+      parameters:
+        - $ref: '#/components/parameters/SourceKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Файл .xlsx (один лист)
+      responses:
+        '200':
+          description: Файл принят и провалидирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Source'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          description: Файл не прошёл валидацию (структура/дубли)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sources/{sourceKey}/preview:
+    get:
+      tags: [sources]
+      operationId: previewSource
+      summary: Превью первых строк источника
+      parameters:
+        - $ref: '#/components/parameters/SourceKey'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 5
+      responses:
+        '200':
+          description: Первые строки файла
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcePreview'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ───────────────────────── CALCULATIONS ─────────────────────────
+
+  /calculations:
+    post:
+      tags: [calculations]
+      operationId: createCalculation
+      summary: Запустить расчёт
+      description: |
+        Запускает асинхронный расчёт цен по загруженному прогнозу спроса.
+        Ошибка одной строки не останавливает расчёт — проблемные строки
+        помечаются статусом (`no_formula`, `missing_quote`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCalculationRequest'
+      responses:
+        '202':
+          description: Расчёт принят в работу
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calculation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Источники не загружены — расчёт невозможен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calculations/{calculationId}:
+    get:
+      tags: [calculations]
+      operationId: getCalculation
+      summary: Статус и прогресс расчёта
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Текущее состояние расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calculation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/events:
+    get:
+      tags: [calculations]
+      operationId: streamCalculationProgress
+      summary: Поток прогресса расчёта (SSE)
+      description: |
+        Server-Sent Events поток прогресса расчёта. Каждое событие — JSON
+        `CalculationProgressEvent`. Поток завершается событием со `status: done`
+        (или `failed`). Клиент подписывается через EventSource.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Поток событий прогресса
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/CalculationProgressEvent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/kpi:
+    get:
+      tags: [calculations]
+      operationId: getCalculationKpi
+      summary: Сводные KPI расчёта
+      description: KPI пересчитываются после ручных правок и выбора формул.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Показатели качества расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kpi'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/rows:
+    get:
+      tags: [rows]
+      operationId: listCalculationRows
+      summary: Строки результата расчёта
+      description: |
+        Таблица результатов с фильтрацией, поиском, сортировкой и пагинацией.
+        `status_counts` — количество строк по каждому статусу (для чипов-фильтров).
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+        - name: status
+          in: query
+          description: Фильтр по статусу подбора
+          schema:
+            $ref: '#/components/schemas/RowStatus'
+        - name: query
+          in: query
+          description: Поиск по клиенту, материалу, row_id
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [row_id, client, material, volume, price]
+            default: row_id
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Страница строк + счётчики статусов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowsPage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/rows/{rowId}:
+    get:
+      tags: [rows]
+      operationId: getRowDetails
+      summary: Расшифровка строки
+      description: |
+        Полная расшифровка: применённая формула, компоненты с подставленными
+        значениями и источниками, альтернативные формулы, итоговая цена.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+        - $ref: '#/components/parameters/RowId'
+      responses:
+        '200':
+          description: Расшифровка строки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/rows/{rowId}/manual-price:
+    put:
+      tags: [rows]
+      operationId: setManualPrice
+      summary: Установить ручную цену
+      description: Заменяет расчётную цену строки ручным значением. KPI пересчитываются.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+        - $ref: '#/components/parameters/RowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualPriceRequest'
+      responses:
+        '200':
+          description: Ручная цена применена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowDetails'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Невалидная цена (не число / ≤ 0)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [rows]
+      operationId: resetManualPrice
+      summary: Сбросить ручную правку
+      description: Возвращает строке расчётную цену по применённой формуле.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+        - $ref: '#/components/parameters/RowId'
+      responses:
+        '200':
+          description: Правка сброшена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/rows/{rowId}/formula:
+    put:
+      tags: [rows]
+      operationId: selectRowFormula
+      summary: Выбрать формулу из нескольких подходящих
+      description: |
+        Когда к строке подошло несколько формул, по умолчанию применяется
+        самая новая (по дате создания). Этим методом пользователь фиксирует
+        свой выбор — цена строки и KPI пересчитываются.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+        - $ref: '#/components/parameters/RowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectFormulaRequest'
+      responses:
+        '200':
+          description: Формула применена, цена пересчитана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Формула не входит в список подходящих для строки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calculations/{calculationId}/export:
+    get:
+      tags: [calculations]
+      operationId: exportCalculation
+      summary: Выгрузка расчёта в Excel
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Файл .xlsx с результатами расчёта
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calculations/{calculationId}/submission:
+    post:
+      tags: [consolidated]
+      operationId: submitCalculationPart
+      summary: Присоединить участок к сводному документу
+      description: |
+        Аналитик фиксирует свой участок расчёта и присоединяет его
+        к сводному документу за период. До присоединения участок
+        отображается в документе как черновик.
+      parameters:
+        - $ref: '#/components/parameters/CalculationId'
+      responses:
+        '200':
+          description: Участок присоединён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidatedPart'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Участок уже присоединён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ─────────────────────────── FORMULAS ───────────────────────────
+
+  /formulas/parse:
+    post:
+      tags: [formulas]
+      operationId: parseFormula
+      summary: Распарсить и провалидировать выражение формулы
+      description: |
+        Разбирает текст договорной формулы и возвращает извлечённые переменные
+        и использованные функции. Используется движком расчёта и UI
+        (подсветка/валидация выражения в расшифровке).
+
+        Грамматика выражений (как в эталонном алгоритме):
+        * операторы: `+ - * / % **`, унарный минус, скобки;
+        * сравнения: `< <= > >= = <>`;
+        * функции: `IF(cond, then, else)`, `RND_X(value, digits)` —
+          коммерческое округление (half-up), `MIN(...)`, `MAX(...)`;
+        * переменные: имена компонентов формулы; допускаются символы
+          `$ € ¥ ₱`, цифры и `_`, имя может начинаться с цифры
+          (например `1_13`, `CUR_$_¥_PBC`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParseFormulaRequest'
+      responses:
+        '200':
+          description: Результат разбора (в т.ч. невалидное выражение — с ошибками)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParsedFormula'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ───────────────────────── CONSOLIDATED ─────────────────────────
+
+  /consolidated/{period}:
+    get:
+      tags: [consolidated]
+      operationId: getConsolidatedDocument
+      summary: Сводный документ за период
+      description: |
+        Документ собирается из участков нескольких аналитиков.
+        Содержит список участков со статусами, сводные KPI и полную таблицу строк.
+      parameters:
+        - $ref: '#/components/parameters/Period'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Сводный документ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidatedDocument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /consolidated/{period}/export:
+    get:
+      tags: [consolidated]
+      operationId: exportConsolidatedDocument
+      summary: Выгрузка сводного документа в Excel
+      description: В выгрузку входят только присоединённые участки.
+      parameters:
+        - $ref: '#/components/parameters/Period'
+      responses:
+        '200':
+          description: Файл .xlsx со сводным документом
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+
+  parameters:
+    SourceKey:
+      name: sourceKey
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/SourceKey'
+    CalculationId:
+      name: calculationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RowId:
+      name: rowId
+      in: path
+      required: true
+      description: Идентификатор строки прогноза спроса (row_id из ssp)
+      schema:
+        type: string
+    Period:
+      name: period
+      in: path
+      required: true
+      description: Расчётный период в формате YYYY-MM
+      schema:
+        type: string
+        pattern: '^\d{4}-\d{2}$'
+        example: '2026-06'
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+
+    # ── общие ──
+
+    Error:
+      type: object
+      description: Стандартная ошибка API
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Машиночитаемый код ошибки
+          example: validation_failed
+        message:
+          type: string
+          description: Человекочитаемое сообщение
+          example: цена должна быть больше нуля
+        details:
+          type: array
+          description: Детали по полям/строкам (опционально)
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    # ── источники ──
+
+    SourceKey:
+      type: string
+      description: Ключ источника данных
+      enum:
+        - ssp
+        - formulas
+        - formula_components
+        - term_types
+        - quotes
+        - quote_mapping
+        - currency_rates
+        - material_groups
+
+    Source:
+      type: object
+      description: Источник данных и его статус
+      required: [key, name, kind, status]
+      properties:
+        key:
+          $ref: '#/components/schemas/SourceKey'
+        name:
+          type: string
+          description: Отображаемое название
+          example: Прогноз спроса
+        file_name:
+          type: string
+          example: ssp.xlsx
+        kind:
+          type: string
+          description: uploaded — загружает пользователь, reference — справочник сервиса
+          enum: [uploaded, reference]
+        status:
+          type: string
+          enum: [missing, loaded, error]
+        row_count:
+          type: integer
+          nullable: true
+          description: Количество строк в загруженном файле
+        issues:
+          type: array
+          description: Замечания валидации (дубли, пропуски)
+          items:
+            type: string
+          example: ['2 дубля по ключу row_id']
+        uploaded_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    SourcePreview:
+      type: object
+      description: Превью первых строк источника
+      required: [columns, rows, total_rows]
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+          example: [row_id, period, client_id, material_id, forecast, deal_type]
+        rows:
+          type: array
+          description: Значения строк в порядке columns
+          items:
+            type: array
+            items:
+              type: string
+              nullable: true
+        total_rows:
+          type: integer
+          example: 4812
+
+    # ── расчёт ──
+
+    CreateCalculationRequest:
+      type: object
+      description: Параметры запуска расчёта
+      required: [period]
+      properties:
+        period:
+          type: string
+          description: Расчётный период YYYY-MM
+          pattern: '^\d{4}-\d{2}$'
+          example: '2026-06'
+        material_group_ids:
+          type: array
+          description: Опциональное сужение по группам материалов
+          items:
+            type: string
+          example: [MT00000116]
+
+    CalculationStatus:
+      type: string
+      enum: [pending, running, done, failed]
+
+    Calculation:
+      type: object
+      description: Расчёт и его прогресс
+      required: [id, period, status, progress, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        period:
+          type: string
+          example: '2026-06'
+        status:
+          $ref: '#/components/schemas/CalculationStatus'
+        progress:
+          $ref: '#/components/schemas/CalculationProgress'
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CalculationProgress:
+      type: object
+      required: [processed_rows, total_rows, percent]
+      properties:
+        processed_rows:
+          type: integer
+          example: 2406
+        total_rows:
+          type: integer
+          example: 4812
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 50
+
+    CalculationProgressEvent:
+      type: object
+      description: Событие SSE-потока прогресса расчёта
+      required: [status, processed_rows, total_rows, percent]
+      properties:
+        status:
+          $ref: '#/components/schemas/CalculationStatus'
+        processed_rows:
+          type: integer
+          example: 2406
+        total_rows:
+          type: integer
+          example: 4812
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 50
+
+    Kpi:
+      type: object
+      description: Сводные показатели качества расчёта
+      required: [total_rows, priced_rows, priced_pct, error_rows]
+      properties:
+        total_rows:
+          type: integer
+          description: Всего строк в расчёте
+        priced_rows:
+          type: integer
+          description: Строк с посчитанной ценой
+        priced_pct:
+          type: integer
+          description: Доля строк с ценой, %
+        matched_rows:
+          type: integer
+          nullable: true
+          description: Строк, совпавших с эталоном в допуске ±3% (null — эталона нет)
+        matched_pct:
+          type: integer
+          nullable: true
+          description: Доля совпавших с эталоном, %
+        error_rows:
+          type: integer
+          description: Строк с ошибками (нет формулы / нет котировки)
+
+    # ── строки ──
+
+    RowStatus:
+      type: string
+      description: |
+        Статус подбора и расчёта строки (соответствует статусам эталонного алгоритма):
+        * `calculated` — посчитано по актуальной формуле (CALCULATED);
+        * `calculated_expired` — посчитано по просроченной формуле, срок продлён
+          до периода строки (CALCULATED_WITH_EXPIRED_FORMULA);
+        * `formula_conflict` — несколько равноприоритетных формул, автоматически
+          выбрана с минимальным formula_id, требуется выбор пользователя
+          (CALCULATED_WITH_FORMULA_CONFLICT, requires_review);
+        * `manual` — применена ручная цена;
+        * `component_error` — не удалось получить значение компонента: нет котировки,
+          курса или маппинга на дату (COMPONENT_ERROR);
+        * `invalid_formula` — выражение формулы не распарсилось или вычисление
+          дало некорректное значение (INVALID_FORMULA);
+        * `no_formula` — ни одна формула не подобрана (FORMULA_NOT_FOUND);
+        * `spot_not_calculated` — строка SPOT, по формулам не считается
+          (SPOT_NOT_CALCULATED).
+      enum:
+        - calculated
+        - calculated_expired
+        - formula_conflict
+        - manual
+        - component_error
+        - invalid_formula
+        - no_formula
+        - spot_not_calculated
+
+    DealType:
+      type: string
+      description: Тип сделки строки прогноза
+      enum: [Formula, SPOT]
+
+    CalculationRow:
+      type: object
+      description: Строка результата расчёта (элемент таблицы)
+      required: [row_id, period, client_id, client_name, material_id, material_name, deal_type, currency, status]
+      properties:
+        row_id:
+          type: string
+          example: '1034256'
+        period:
+          type: string
+          example: '2026-06'
+        client_id:
+          type: string
+          example: CL-10152
+        client_name:
+          type: string
+          example: Клиент 152
+        material_id:
+          type: string
+          example: '1182567'
+        material_name:
+          type: string
+          example: Полистирол, марка 825ES
+        material_group_m:
+          type: string
+          nullable: true
+          example: MT0002006
+        deal_type:
+          $ref: '#/components/schemas/DealType'
+        currency:
+          type: string
+          description: Валюта строки (ISO-код)
+          example: RUB
+        volume:
+          type: number
+          format: double
+          nullable: true
+          description: Объём, т
+        status:
+          $ref: '#/components/schemas/RowStatus'
+        final_price:
+          type: number
+          format: double
+          nullable: true
+          description: Итоговая цена в валюте строки (null — цены нет)
+        candidate_count:
+          type: integer
+          description: Сколько формул подошло к строке
+          default: 0
+        requires_review:
+          type: boolean
+          default: false
+          description: Требуется выбор формулы пользователем (равноприоритетный конфликт)
+        warning:
+          type: string
+          nullable: true
+          description: Предупреждение расчёта (например, использована просроченная формула)
+        error:
+          type: string
+          nullable: true
+          description: Текст ошибки для проблемных статусов
+        matched:
+          type: boolean
+          nullable: true
+          description: Совпадение с эталоном ±3% (null — эталона нет или цены нет)
+
+    RowsPage:
+      type: object
+      description: Страница строк результата
+      required: [items, total, status_counts]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationRow'
+        total:
+          type: integer
+          description: Всего строк под текущий фильтр
+        status_counts:
+          type: object
+          description: Количество строк по каждому статусу (для чипов-фильтров)
+          additionalProperties:
+            type: integer
+          example:
+            calculated: 677
+            calculated_expired: 108
+            formula_conflict: 4
+            component_error: 1167
+            no_formula: 812
+            spot_not_calculated: 308
+
+    ComponentType:
+      type: string
+      description: |
+        Тип компонента формулы (по кодам термов SAP):
+        quote — котировка (1), currency_rate — курс валют (5),
+        constant — константа (H), markup — надбавка (A), logistics — логистика (B),
+        quote_correction — котировочная корректировка (C), discount — скидка (D),
+        other — прочее (E), price_list — прайс-лист (7), grouping — группировка (0/6).
+      enum:
+        - quote
+        - currency_rate
+        - constant
+        - markup
+        - logistics
+        - quote_correction
+        - discount
+        - other
+        - price_list
+        - grouping
+
+    FormulaComponent:
+      type: object
+      description: Компонент (терм) формулы с подставленным значением
+      required: [var_name, type, status]
+      properties:
+        var_name:
+          type: string
+          example: CPT_MOSCOW_109
+        type:
+          $ref: '#/components/schemas/ComponentType'
+        type_label:
+          type: string
+          description: Человекочитаемый тип (из справочника термов)
+          example: Котировка
+        status:
+          type: string
+          description: Разрешилось ли значение компонента
+          enum: [ok, error]
+        value:
+          type: number
+          format: double
+          nullable: true
+          description: Подставленное значение (null — значение не найдено)
+        source:
+          type: string
+          description: Источник значения (файл/справочник)
+          example: quotes.csv
+        quote_code:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID котировки в озере данных (для типа quote)
+        value_date:
+          type: string
+          format: date
+          nullable: true
+          description: Фактическая дата взятого значения (для котировок/курсов)
+          example: '2026-06-15'
+        version_type:
+          type: string
+          nullable: true
+          description: Тип публикации взятого значения по каскаду Факт → ОФ → ППР
+          example: Факт
+        date_gap_days:
+          type: integer
+          nullable: true
+          description: На сколько дней дата значения отстоит от периода строки
+        warning:
+          type: string
+          nullable: true
+          description: Предупреждение (например, пустой фиксированный терм принят равным 0)
+        error:
+          type: string
+          nullable: true
+          description: Причина ошибки компонента (нет маппинга / нет значений котировки / нет курса)
+
+    MatchScope:
+      type: string
+      description: Как формула сматчилась со строкой — напрямую по материалу или через группу M
+      enum: [material, group_m]
+
+    SelectionReason:
+      type: string
+      description: |
+        Причина выбора формулы алгоритмом:
+        * `actual_successful` — актуальная успешно посчитанная формула;
+        * `latest_expired_successful` — последняя из просроченных успешных (продление);
+        * `technical_tie_break` — равноприоритетный конфликт, выбрана по минимальному formula_id;
+        * `no_successful` — ни одна не посчиталась, показана ошибка приоритетного кандидата;
+        * `user_selected` — формулу выбрал пользователь.
+      enum:
+        - actual_successful
+        - latest_expired_successful
+        - technical_tie_break
+        - no_successful
+        - user_selected
+
+    AppliedFormula:
+      type: object
+      description: Формула, применённая к строке
+      required: [formula_id, formula_text]
+      properties:
+        formula_id:
+          type: string
+          example: Z900026393
+        formula_text:
+          type: string
+          description: Исходное выражение формулы (грамматику см. в POST /formulas/parse)
+          example: 'IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )'
+        variables:
+          type: array
+          description: Переменные, извлечённые парсером из выражения
+          items:
+            type: string
+          example: [CPT_MOSCOW_109, L, H1, D, SPOT]
+        formula_currency:
+          type: string
+          description: Валюта документа формулы; цена конвертируется в валюту строки
+          example: RUB
+        match_scope:
+          $ref: '#/components/schemas/MatchScope'
+        valid_from:
+          type: string
+          format: date
+          example: '2026-02-01'
+        valid_to:
+          type: string
+          format: date
+          example: '2027-12-31'
+        created_on:
+          type: string
+          format: date
+          nullable: true
+          description: Дата создания в SAP — критерий выбора формулы по умолчанию
+        is_actual:
+          type: boolean
+          description: Период строки попадает в окно действия формулы
+        is_extended:
+          type: boolean
+          default: false
+          description: Формула просрочена и продлена до периода строки
+        selection_reason:
+          $ref: '#/components/schemas/SelectionReason'
+
+    AlternativeFormula:
+      type: object
+      description: |
+        Формула-кандидат из списка подходящих. Все кандидаты считаются заранее
+        (цена каждого известна до выбора пользователя).
+      required: [formula_id, formula_text, is_selected]
+      properties:
+        formula_id:
+          type: string
+        formula_text:
+          type: string
+        match_scope:
+          $ref: '#/components/schemas/MatchScope'
+        valid_from:
+          type: string
+          format: date
+        valid_to:
+          type: string
+          format: date
+        created_on:
+          type: string
+          format: date
+          nullable: true
+        is_actual:
+          type: boolean
+          description: Период строки в окне действия формулы
+        price:
+          type: number
+          format: double
+          nullable: true
+          description: Цена строки при применении этой формулы (null — расчёт не удался)
+        calc_error:
+          type: string
+          nullable: true
+          description: Ошибка расчёта этого кандидата (компонент/парсинг)
+        matched:
+          type: boolean
+          nullable: true
+          description: Совпадение с эталоном ±3% при применении этой формулы
+        is_selected:
+          type: boolean
+          description: Применена ли эта формула к строке сейчас
+
+    RowDetails:
+      type: object
+      description: Полная расшифровка строки расчёта
+      required: [row, components, alternatives]
+      properties:
+        row:
+          $ref: '#/components/schemas/CalculationRow'
+        applied_formula:
+          description: Отсутствует в ответе — формула не подобрана
+          allOf:
+            - $ref: '#/components/schemas/AppliedFormula'
+        components:
+          type: array
+          description: Компоненты применённой формулы с подставленными значениями
+          items:
+            $ref: '#/components/schemas/FormulaComponent'
+        alternatives:
+          type: array
+          description: Все подходящие формулы (включая применённую)
+          items:
+            $ref: '#/components/schemas/AlternativeFormula'
+        price_formula_currency:
+          type: number
+          format: double
+          nullable: true
+          description: Цена в валюте документа формулы (до конвертации в валюту строки)
+        conversion:
+          description: >-
+            Как цена конвертирована из валюты формулы в валюту строки;
+            отсутствует, если цены нет или валюты совпадают
+          allOf:
+            - $ref: '#/components/schemas/CurrencyConversion'
+        equal_priority_count:
+          type: integer
+          default: 0
+          description: Сколько кандидатов оказалось равноприоритетными (>1 — конфликт)
+        manual_price:
+          type: number
+          format: double
+          nullable: true
+          description: Ручная цена, если применена
+        reference_price:
+          type: number
+          format: double
+          nullable: true
+          description: Эталонная цена для сверки (null — эталона нет)
+
+    CurrencyConversion:
+      type: object
+      description: Детали конвертации цены между валютами через курсы к RUB
+      required: [from_currency, to_currency]
+      properties:
+        from_currency:
+          type: string
+          example: USD
+        to_currency:
+          type: string
+          example: RUB
+        from_rate:
+          type: number
+          format: double
+          nullable: true
+          description: Курс валюты формулы к RUB (null — identity)
+        to_rate:
+          type: number
+          format: double
+          nullable: true
+          description: Курс валюты строки к RUB (null — identity)
+        rate_date:
+          type: string
+          format: date
+          nullable: true
+          description: Дата взятых курсов
+        version_type:
+          type: string
+          nullable: true
+          description: Тип версии курса по каскаду Факт → ОФ → ППР
+
+    ParseFormulaRequest:
+      type: object
+      required: [formula_text]
+      properties:
+        formula_text:
+          type: string
+          description: Текст выражения формулы
+          example: 'IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )'
+
+    ParsedFormula:
+      type: object
+      description: Результат разбора выражения формулы
+      required: [valid, variables, functions]
+      properties:
+        valid:
+          type: boolean
+          description: Выражение синтаксически корректно и содержит только разрешённые элементы
+        variables:
+          type: array
+          description: Уникальные переменные выражения в порядке появления
+          items:
+            type: string
+          example: [CPT_MOSCOW_109, L, H1, D, SPOT]
+        functions:
+          type: array
+          description: Использованные функции
+          items:
+            type: string
+            enum: [IF, RND_X, MIN, MAX]
+          example: [IF]
+        errors:
+          type: array
+          description: Ошибки разбора (пусто, если valid=true)
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: 'запрещённый элемент формулы: Attribute'
+              position:
+                type: integer
+                nullable: true
+                description: Позиция ошибки в строке выражения (если известна)
+
+    ManualPriceRequest:
+      type: object
+      required: [price]
+      properties:
+        price:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          description: Ручная цена в валюте строки, строго больше нуля
+
+    SelectFormulaRequest:
+      type: object
+      required: [formula_id]
+      properties:
+        formula_id:
+          type: string
+          description: Идентификатор формулы из списка alternatives
+          example: Z900026393
+
+    # ── сводный документ ──
+
+    PartStatus:
+      type: string
+      description: Статус участка аналитика в сводном документе
+      enum: [draft, review, joined]
+
+    ConsolidatedPart:
+      type: object
+      description: Участок одного аналитика в сводном документе
+      required: [calculation_id, analyst_name, status, row_count]
+      properties:
+        calculation_id:
+          type: string
+          format: uuid
+        analyst_name:
+          type: string
+          example: А. Смирнов
+        part_name:
+          type: string
+          nullable: true
+          description: Название участка (зона ответственности)
+          example: Ароматика и гликоли
+        status:
+          $ref: '#/components/schemas/PartStatus'
+        row_count:
+          type: integer
+        priced_pct:
+          type: integer
+          description: Покрытие участка ценами, %
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ConsolidatedRow:
+      type: object
+      description: Строка сводного документа
+      required: [analyst_name, row]
+      properties:
+        analyst_name:
+          type: string
+        is_draft:
+          type: boolean
+          default: false
+          description: Строка из неприсоединённого участка (черновик)
+        row:
+          $ref: '#/components/schemas/CalculationRow'
+
+    ConsolidatedDocument:
+      type: object
+      description: Сводный документ за расчётный период
+      required: [period, parts, kpi, rows, total_rows]
+      properties:
+        period:
+          type: string
+          example: '2026-06'
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsolidatedPart'
+        kpi:
+          $ref: '#/components/schemas/Kpi'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsolidatedRow'
+        total_rows:
+          type: integer
+          description: Всего строк в документе (для пагинации)

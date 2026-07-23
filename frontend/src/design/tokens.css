@@ -1,0 +1,92 @@
+/* Дизайн-токены из прототипа «Палитра и интерактивный дизайн-система».
+   Ключ темы — [data-theme] на корне; значения не хардкодятся в компонентах. */
+
+:root,
+:root[data-theme='light'] {
+  --color-bg: #ffffff;
+  --color-surface: #f3f7f6;
+  --color-text: #0c2b31;
+  --color-divider: rgba(0, 49, 60, 0.16);
+  --color-accent: #00313c;
+  --color-accent-100: #e6f6f0;
+  --color-accent-200: #c9efe3;
+  --color-accent-300: #77e2c3;
+  --color-accent-500: #0d6a6f;
+  --color-accent-600: #08505a;
+  --color-accent-700: #053b44;
+  --color-accent-800: #02313a;
+
+  --mint: #77e2c3;
+  --action: #e04e39;
+  --action-600: #c53f2c;
+
+  --panel: #ffffff;
+  --row-alt: #f7fafa;
+  --header-bg: #f0f5f4;
+
+  /* Семантические статус-цвета (ключ — вид, не бизнес-статус). */
+  --st-ok: #00787f;
+  --st-ok-bg: rgba(0, 140, 149, 0.13);
+  --st-ext: #0a5a63;
+  --st-ext-bg: rgba(119, 226, 195, 0.3);
+  --st-multi: #c0402d;
+  --st-multi-bg: rgba(224, 78, 57, 0.13);
+  --st-manual: #0b4d57;
+  --st-manual-bg: rgba(119, 226, 195, 0.22);
+  --st-warn: #8a6a00;
+  --st-warn-bg: rgba(252, 194, 23, 0.2);
+  --st-err: #c23b32;
+  --st-err-bg: rgba(252, 120, 110, 0.18);
+
+  --good: #008c95;
+  --mid: #8a6a00;
+  --bad: #c23b32;
+
+  --shadow-lg: 0 18px 48px rgba(0, 31, 38, 0.22);
+
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #04212a;
+  --color-surface: #0a2e37;
+  --color-text: #e6f3ef;
+  --color-divider: rgba(119, 226, 195, 0.16);
+  --color-accent: #77e2c3;
+  --color-accent-100: #0e333b;
+  --color-accent-200: #12414a;
+  --color-accent-300: #1c5a5f;
+  --color-accent-500: #4bb8a6;
+  --color-accent-600: #8fe8d0;
+  --color-accent-700: #a9eedd;
+  --color-accent-800: #c9f4e9;
+
+  --mint: #77e2c3;
+  --action: #f2664f;
+  --action-600: #e04e39;
+
+  --panel: #082932;
+  --row-alt: #07272f;
+  --header-bg: #0a2e37;
+
+  --st-ok: #5fd6c9;
+  --st-ok-bg: rgba(0, 140, 149, 0.24);
+  --st-ext: #8fe6cd;
+  --st-ext-bg: rgba(119, 226, 195, 0.16);
+  --st-multi: #ff8a72;
+  --st-multi-bg: rgba(224, 78, 57, 0.22);
+  --st-manual: #8fe6cd;
+  --st-manual-bg: rgba(119, 226, 195, 0.14);
+  --st-warn: #f5c53d;
+  --st-warn-bg: rgba(252, 194, 23, 0.16);
+  --st-err: #ff9088;
+  --st-err-bg: rgba(252, 120, 110, 0.2);
+
+  --good: #3fd0c0;
+  --mid: #f5c53d;
+  --bad: #ff9088;
+
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
