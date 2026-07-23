@@ -604,11 +604,11 @@ components:
       name: period
       in: path
       required: true
-      description: Расчётный период в формате YYYY-MM
+      description: Расчётный период YYYY-MM либо 'all' — весь горизонт спроса
       schema:
         type: string
-        pattern: '^\d{4}-\d{2}$'
-        example: '2026-06'
+        pattern: '^(all|\d{4}-\d{2})$'
+        example: all
 
   responses:
     BadRequest:
@@ -734,9 +734,9 @@ components:
       properties:
         period:
           type: string
-          description: Расчётный период YYYY-MM
-          pattern: '^\d{4}-\d{2}$'
-          example: '2026-06'
+          description: Расчётный период YYYY-MM либо 'all' — расчёт по всему горизонту спроса
+          pattern: '^(all|\d{4}-\d{2})$'
+          example: all
         material_group_ids:
           type: array
           description: Опциональное сужение по группам материалов

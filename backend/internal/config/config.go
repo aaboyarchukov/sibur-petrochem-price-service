@@ -1,44 +1,22 @@
-// Package config — конфигурация сервиса из переменных окружения.
+// Package config — конфигурация сервиса из yaml и переменных окружения.
 package config
 
 import (
-	"errors"
-	"os"
 	"time"
+
+	"sibur-petrochem-price-service/internal/repository/postgres"
 )
 
-// ErrEmptyDatabaseURL — не задан DSN базы данных.
-var ErrEmptyDatabaseURL = errors.New("empty DATABASE_URL")
-
-// App — конфигурация приложения.
+// App — корневая конфигурация приложения. Подключаемые группы имеют собственные
+// yaml-секции; env перекрывает yaml, env-default — фолбэк для необязательных полей.
 type App struct {
-	DatabaseURL       string
-	ServerAddr        string
-	ReadHeaderTimeout time.Duration
-	ShutdownTimeout   time.Duration
+	Postgres postgres.Config `yaml:"postgres" validate:"required"`
+	Server   Server          `yaml:"server"   validate:"required"`
 }
 
-func Parse() (App, error) {
-	const (
-		defaultAddr              = ":8080"
-		defaultReadHeaderTimeout = 5 * time.Second
-		defaultShutdownTimeout   = 10 * time.Second
-	)
-
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		return App{}, ErrEmptyDatabaseURL
-	}
-
-	addr := os.Getenv("SERVER_ADDR")
-	if addr == "" {
-		addr = defaultAddr
-	}
-
-	return App{
-		DatabaseURL:       databaseURL,
-		ServerAddr:        addr,
-		ReadHeaderTimeout: defaultReadHeaderTimeout,
-		ShutdownTimeout:   defaultShutdownTimeout,
-	}, nil
+// Server — параметры HTTP-сервера.
+type Server struct {
+	Addr              string        `yaml:"addr"                env:"SERVER_ADDR"                 env-default:":8080" validate:"required"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"  env:"SERVER_READ_HEADER_TIMEOUT" env-default:"5s"    validate:"required,gt=0"`
+	ShutdownTimeout   time.Duration `yaml:"shutdown_timeout"     env:"SERVER_SHUTDOWN_TIMEOUT"    env-default:"10s"   validate:"required,gt=0"`
 }

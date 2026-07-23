@@ -39,8 +39,14 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@db:5432/${PG_DB_NAME}?sslmode=disable
-      PORT: 8080
+      # Приложение собирает DSN само из PG_DB_* (см. internal/config, режим -env-only)
+      PG_DB_USER: ${PG_DB_USER}
+      PG_DB_PASSWORD: ${PG_DB_PASSWORD:?set PG_DB_PASSWORD in .env}
+      PG_DB_NAME: ${PG_DB_NAME}
+      PG_DB_HOST: db
+      PG_DB_PORT: "5432"
+      PG_DB_SSLMODE: ${PG_DB_SSLMODE:-disable}
+      SERVER_ADDR: ":8080"
     depends_on:
       db:
         condition: service_healthy

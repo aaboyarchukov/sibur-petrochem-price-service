@@ -25,24 +25,18 @@ type App struct {
 }
 
 func New(ctx context.Context, cfg config.App) (*App, error) {
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	pool, err := postgres.NewPool(ctx, cfg.Postgres)
 	if err != nil {
-		return nil, fmt.Errorf("create pgx pool: %w", err)
-	}
-
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-
-		return nil, fmt.Errorf("ping database: %w", err)
+		return nil, fmt.Errorf("connect postgres: %w", err)
 	}
 
 	repo := postgres.New(pool)
 	service := calculations.New(repo, pricing.NewEngine())
 
 	server := &http.Server{
-		Addr:              cfg.ServerAddr,
+		Addr:              cfg.Server.Addr,
 		Handler:           delivery_http.NewRouter(service, repo),
-		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		ReadHeaderTimeout: cfg.Server.ReadHeaderTimeout,
 	}
 
 	return &App{cfg: cfg, pool: pool, server: server}, nil
@@ -50,7 +44,7 @@ func New(ctx context.Context, cfg config.App) (*App, error) {
 
 func (a *App) Run() {
 	go func() {
-		slog.Info("http server started", "addr", a.cfg.ServerAddr)
+		slog.Info("http server started", "addr", a.cfg.Server.Addr)
 		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("http server failed", "error", err)
 		}
@@ -58,7 +52,7 @@ func (a *App) Run() {
 }
 
 func (a *App) Shutdown(ctx context.Context) {
-	shutdownCtx, cancel := context.WithTimeout(ctx, a.cfg.ShutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(ctx, a.cfg.Server.ShutdownTimeout)
 	defer cancel()
 
 	if err := a.server.Shutdown(shutdownCtx); err != nil {
