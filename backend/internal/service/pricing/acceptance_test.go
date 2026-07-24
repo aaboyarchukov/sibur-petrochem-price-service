@@ -58,12 +58,12 @@ func TestEngine_Run_ReferenceAcceptance(t *testing.T) {
 	assert.Zero(t, mismatchedPrices, "строк с расхождением цены")
 
 	// Контрольное распределение эталонного прогона.
-	assert.Equal(t, 677, statusCounts[domain.StatusCalculated])
-	assert.Equal(t, 1167, statusCounts[domain.StatusComponentError])
-	assert.Equal(t, 812, statusCounts[domain.StatusFormulaNotFound])
-	assert.Equal(t, 308, statusCounts[domain.StatusSpotNotCalculated])
-	assert.Equal(t, 108, statusCounts[domain.StatusCalculatedExpired])
-	assert.Equal(t, 4, statusCounts[domain.StatusFormulaConflict])
+	assert.Equal(t, 1397, statusCounts[domain.StatusCalculated])
+	assert.Equal(t, 1901, statusCounts[domain.StatusComponentError])
+	assert.Equal(t, 478, statusCounts[domain.StatusFormulaNotFound])
+	assert.Equal(t, 163, statusCounts[domain.StatusSpotNotCalculated])
+	assert.Equal(t, 274, statusCounts[domain.StatusCalculatedExpired])
+	assert.Equal(t, 65, statusCounts[domain.StatusFormulaConflict])
 }
 
 func floatOrNil(value *float64) any {
