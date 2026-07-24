@@ -45,6 +45,22 @@ SELECT group_m, material_id, material_name, valid_from, valid_to
 FROM material_groups
 ORDER BY group_m, material_id;
 
+-- name: ListSspProducts :many
+-- Уникальные продукты для пикеров экрана параметров (одно имя на код материала).
+SELECT DISTINCT ON (mtr_nsi_code) mtr_nsi_code, mtr_nsi_name
+FROM ssp
+ORDER BY mtr_nsi_code;
+
+-- name: ListSspClients :many
+-- Уникальные клиенты для пикеров экрана параметров (одно имя на идентификатор).
+SELECT DISTINCT ON (client_id) client_id, client_name
+FROM ssp
+ORDER BY client_id;
+
+-- name: SspPeriodBounds :one
+SELECT min(period)::date AS period_min, max(period)::date AS period_max
+FROM ssp;
+
 -- name: CountSourceRows :one
 SELECT
     (SELECT count(*) FROM ssp)                AS ssp,

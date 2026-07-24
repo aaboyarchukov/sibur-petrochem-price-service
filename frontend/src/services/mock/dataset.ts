@@ -258,36 +258,87 @@ export function buildRows(): RowRecord[] {
       candidates = []
     } else if (status === 'formula_conflict') {
       candidates = [
-        makeCandidate(quote, currency, `Z9000${28500 + i}`, '2026-05-20', '2026-06-01', '2026-12-31', price),
-        makeCandidate(quote, currency, `Z9000${11000 + i}`, '2026-05-20', '2026-03-01', '2026-12-31', Math.round(price * 1.04)),
+        makeCandidate(
+          quote,
+          currency,
+          `Z9000${28500 + i}`,
+          '2026-05-20',
+          '2026-06-01',
+          '2026-12-31',
+          price,
+        ),
+        makeCandidate(
+          quote,
+          currency,
+          `Z9000${11000 + i}`,
+          '2026-05-20',
+          '2026-03-01',
+          '2026-12-31',
+          Math.round(price * 1.04),
+        ),
       ]
       defaultFormulaId = candidates[0]!.formula_id
     } else if (status === 'component_error') {
       candidates = [
-        makeCandidate(quote, currency, `Z9000${26000 + i}`, '2026-04-01', '2026-06-01', '2026-12-31', null),
+        makeCandidate(
+          quote,
+          currency,
+          `Z9000${26000 + i}`,
+          '2026-04-01',
+          '2026-06-01',
+          '2026-12-31',
+          null,
+        ),
       ]
       defaultFormulaId = candidates[0]!.formula_id
     } else if (status === 'invalid_formula') {
-      const bad = makeCandidate(quote, currency, `Z9000${25000 + i}`, '2026-04-01', '2026-06-01', '2026-12-31', null, {
-        error: 'синтаксическая ошибка формулы: неожиданный токен',
-      })
+      const bad = makeCandidate(
+        quote,
+        currency,
+        `Z9000${25000 + i}`,
+        '2026-04-01',
+        '2026-06-01',
+        '2026-12-31',
+        null,
+        {
+          error: 'синтаксическая ошибка формулы: неожиданный токен',
+        },
+      )
       bad.formula_text = `( ( ${quote} - L ) / / H1 ) * D`
       candidates = [bad]
       defaultFormulaId = bad.formula_id
     } else if (status === 'calculated_expired') {
       candidates = [
-        makeCandidate(quote, currency, `Z9000${23000 + i}`, '2026-01-10', '2026-02-01', '2026-05-31', price, {
-          actual: false,
-          extended: true,
-        }),
+        makeCandidate(
+          quote,
+          currency,
+          `Z9000${23000 + i}`,
+          '2026-01-10',
+          '2026-02-01',
+          '2026-05-31',
+          price,
+          {
+            actual: false,
+            extended: true,
+          },
+        ),
       ]
       defaultFormulaId = candidates[0]!.formula_id
     } else {
       // calculated и manual (manual — предзаданная ручная правка поверх calculated).
       candidates = [
-        makeCandidate(quote, currency, `Z9000${20000 + i}`, '2026-04-15', '2026-02-01', '2027-12-31', price, {
-          scope: i % 3 === 0 ? 'material' : 'group_m',
-        }),
+        makeCandidate(
+          quote,
+          currency,
+          `Z9000${20000 + i}`,
+          '2026-04-15',
+          '2026-02-01',
+          '2027-12-31',
+          price,
+          {
+            scope: i % 3 === 0 ? 'material' : 'group_m',
+          },
+        ),
       ]
       defaultFormulaId = candidates[0]!.formula_id
     }
@@ -315,14 +366,78 @@ export function buildRows(): RowRecord[] {
 // Восемь источников: 2 пользовательских + 6 справочников.
 export function buildSources(): Source[] {
   return [
-    { key: 'ssp', name: 'Прогноз спроса', file_name: 'ssp.csv', kind: 'uploaded', status: 'loaded', row_count: 3076, issues: [] },
-    { key: 'formulas', name: 'Каталог формул', file_name: 'formulas.csv', kind: 'uploaded', status: 'loaded', row_count: 576, issues: [] },
-    { key: 'formula_components', name: 'Компоненты формул', file_name: 'formula_components.csv', kind: 'reference', status: 'loaded', row_count: 4101, issues: [] },
-    { key: 'term_types', name: 'Типы термов', file_name: 'term_types.csv', kind: 'reference', status: 'loaded', row_count: 11, issues: [] },
-    { key: 'quotes', name: 'Котировки', file_name: 'quotes.csv', kind: 'reference', status: 'loaded', row_count: 298, issues: [] },
-    { key: 'quote_mapping', name: 'Маппинг котировок', file_name: 'quote_mapping.csv', kind: 'reference', status: 'loaded', row_count: 70, issues: [] },
-    { key: 'currency_rates', name: 'Курсы валют', file_name: 'currency_rates.csv', kind: 'reference', status: 'loaded', row_count: 1581, issues: [] },
-    { key: 'material_groups', name: 'Группы материалов', file_name: 'material_groups.csv', kind: 'reference', status: 'loaded', row_count: 614, issues: [] },
+    {
+      key: 'ssp',
+      name: 'Прогноз спроса',
+      file_name: 'ssp.csv',
+      kind: 'uploaded',
+      status: 'loaded',
+      row_count: 3076,
+      issues: [],
+    },
+    {
+      key: 'formulas',
+      name: 'Каталог формул',
+      file_name: 'formulas.csv',
+      kind: 'uploaded',
+      status: 'loaded',
+      row_count: 576,
+      issues: [],
+    },
+    {
+      key: 'formula_components',
+      name: 'Компоненты формул',
+      file_name: 'formula_components.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 4101,
+      issues: [],
+    },
+    {
+      key: 'term_types',
+      name: 'Типы термов',
+      file_name: 'term_types.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 11,
+      issues: [],
+    },
+    {
+      key: 'quotes',
+      name: 'Котировки',
+      file_name: 'quotes.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 298,
+      issues: [],
+    },
+    {
+      key: 'quote_mapping',
+      name: 'Маппинг котировок',
+      file_name: 'quote_mapping.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 70,
+      issues: [],
+    },
+    {
+      key: 'currency_rates',
+      name: 'Курсы валют',
+      file_name: 'currency_rates.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 1581,
+      issues: [],
+    },
+    {
+      key: 'material_groups',
+      name: 'Группы материалов',
+      file_name: 'material_groups.csv',
+      kind: 'reference',
+      status: 'loaded',
+      row_count: 614,
+      issues: [],
+    },
   ]
 }
 

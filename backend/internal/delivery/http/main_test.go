@@ -64,6 +64,34 @@ func (f *fakeSources) SourceCounts(_ context.Context) (map[string]int64, error) 
 	return f.counts, nil
 }
 
+// SourceFacets — уникальные продукты/клиенты и границы горизонта из fake-ssp.
+func (f *fakeSources) SourceFacets(_ context.Context) (domain.SourceFacets, error) {
+	products := map[int64]string{}
+	clients := map[string]string{}
+	var min, max string
+	for _, row := range f.src.Ssp {
+		products[row.MaterialID] = row.MaterialName
+		clients[row.ClientID] = row.ClientName
+		month := row.Period.Format("2006-01")
+		if min == "" || month < min {
+			min = month
+		}
+		if month > max {
+			max = month
+		}
+	}
+
+	facets := domain.SourceFacets{PeriodMin: min, PeriodMax: max}
+	for id, name := range products {
+		facets.Products = append(facets.Products, domain.ProductFacet{ID: id, Name: name})
+	}
+	for id, name := range clients {
+		facets.Clients = append(facets.Clients, domain.ClientFacet{ID: id, Name: name})
+	}
+
+	return facets, nil
+}
+
 func (f *fakeSources) ReplaceSsp(_ context.Context, rows []domain.SspRow) error {
 	f.src.Ssp = rows
 	f.counts["ssp"] = int64(len(rows))
@@ -135,12 +163,22 @@ func createCalculation(t *testing.T, sut nethttp.Handler, period string) string 
 	demoCode, _, _ := do(t, sut, nethttp.MethodPost, "/api/v1/sources/demo", nil)
 	require.Equal(t, nethttp.StatusOK, demoCode)
 
-	code, body, _ := do(t, sut, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": period})
+	code, body, _ := do(t, sut, nethttp.MethodPost, "/api/v1/calculations", calcBody(period))
 	require.Equal(t, nethttp.StatusAccepted, code)
 	id, ok := body["id"].(string)
 	require.True(t, ok, "в ответе должен быть id расчёта")
 
 	return id
+}
+
+// calcBody — тело POST /calculations из строки периода: пусто/"all" → весь горизонт,
+// "YYYY-MM" → диапазон из одного месяца.
+func calcBody(period string) map[string]any {
+	if period == "" || period == "all" {
+		return map[string]any{}
+	}
+
+	return map[string]any{"period_from": period, "period_to": period}
 }
 
 func date(t *testing.T, value string) time.Time {

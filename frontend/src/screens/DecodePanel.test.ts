@@ -19,7 +19,7 @@ describe('DecodePanel', () => {
 
   it('рендерит формулу и компоненты для посчитанной строки', async () => {
     const store = useCalculationStore()
-    await store.start('2026-06')
+    await store.start({})
     const rowId = await firstRowWith('calculated')
     await store.select(rowId)
 
@@ -34,7 +34,7 @@ describe('DecodePanel', () => {
 
   it('показывает сообщение об отсутствии формулы для no_formula', async () => {
     const store = useCalculationStore()
-    await store.start('2026-06')
+    await store.start({})
     const rowId = await firstRowWith('no_formula')
     await store.select(rowId)
 

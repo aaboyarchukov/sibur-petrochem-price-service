@@ -35,6 +35,9 @@ func (h *Handler) ListCalculationRows(_ context.Context, request api.ListCalcula
 	if params.Offset != nil {
 		query.Offset = *params.Offset
 	}
+	if params.OnlyFormulaErrors != nil {
+		query.OnlyFormulaErrors = *params.OnlyFormulaErrors
+	}
 
 	page, err := h.calcs.Rows(request.CalculationID.String(), query)
 	if err != nil {

@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"sort"
 	"testing"
 	"time"
 
@@ -32,6 +33,34 @@ func TestIntegration_LoadSources(t *testing.T) {
 
 			tc.State.Response.Sources = sources
 			tc.State.Response.Counts = counts
+		})
+
+		t.Run("facets are distinct, sorted and bounded by seed ssp", func(t *testing.T) {
+			tc := newIntegrationContext(t)
+			tc.Given().When(ActNoop)
+
+			facets, err := tc.SUT.SourceFacets(context.Background())
+			require.NoError(t, err)
+
+			require.NotEmpty(t, facets.Products)
+			require.NotEmpty(t, facets.Clients)
+			assert.True(t, sort.SliceIsSorted(facets.Products, func(i, j int) bool {
+				return facets.Products[i].Name < facets.Products[j].Name
+			}), "продукты отсортированы по имени")
+			assert.True(t, sort.SliceIsSorted(facets.Clients, func(i, j int) bool {
+				return facets.Clients[i].Name < facets.Clients[j].Name
+			}), "клиенты отсортированы по имени")
+
+			seenProduct := map[int64]struct{}{}
+			for _, product := range facets.Products {
+				_, dup := seenProduct[product.ID]
+				require.False(t, dup, "продукт %d не должен дублироваться", product.ID)
+				seenProduct[product.ID] = struct{}{}
+			}
+
+			assert.Regexp(t, `^\d{4}-\d{2}$`, facets.PeriodMin)
+			assert.Regexp(t, `^\d{4}-\d{2}$`, facets.PeriodMax)
+			assert.LessOrEqual(t, facets.PeriodMin, facets.PeriodMax)
 		})
 	})
 }

@@ -151,6 +151,24 @@ func mapKpi(kpi calculations.Kpi) api.KPI {
 	}
 }
 
+func mapFacets(facets domain.SourceFacets) api.SourceFacets {
+	products := make([]api.ProductFacet, 0, len(facets.Products))
+	for _, product := range facets.Products {
+		products = append(products, api.ProductFacet{ID: product.ID, Name: product.Name})
+	}
+	clients := make([]api.ClientFacet, 0, len(facets.Clients))
+	for _, client := range facets.Clients {
+		clients = append(clients, api.ClientFacet{ID: client.ID, Name: client.Name})
+	}
+
+	return api.SourceFacets{
+		Products:  products,
+		Clients:   clients,
+		PeriodMin: nullableString(facets.PeriodMin),
+		PeriodMax: nullableString(facets.PeriodMax),
+	}
+}
+
 func mapComponent(component domain.ComponentValue) api.FormulaComponent {
 	status := api.FormulaComponentStatus("ok")
 	if component.Error != "" {

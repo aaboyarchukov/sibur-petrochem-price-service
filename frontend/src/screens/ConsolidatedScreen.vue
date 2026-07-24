@@ -34,9 +34,27 @@ const kpiCards = computed(() => {
   const col = (v: number, g: number, m: number) =>
     v >= g ? 'var(--good)' : v >= m ? 'var(--mid)' : 'var(--bad)'
   return [
-    { label: 'Всего строк в документе', value: String(d.total_rows), sub: 'из всех участков', color: 'var(--color-accent)', bar: '100%' },
-    { label: 'Покрытие формулами', value: `${k.formula_coverage_pct}%`, sub: 'строк Formula', color: col(k.formula_coverage_pct, 90, 75), bar: `${k.formula_coverage_pct}%` },
-    { label: 'Контрольная сумма', value: `${formatNumber(k.control_sum_mln, 1)} млн ₽`, sub: 'Σ цена × объём', color: 'var(--color-accent)', bar: '100%' },
+    {
+      label: 'Всего строк в документе',
+      value: String(d.total_rows),
+      sub: 'из всех участков',
+      color: 'var(--color-accent)',
+      bar: '100%',
+    },
+    {
+      label: 'Покрытие формулами',
+      value: `${k.formula_coverage_pct}%`,
+      sub: 'строк Formula',
+      color: col(k.formula_coverage_pct, 90, 75),
+      bar: `${k.formula_coverage_pct}%`,
+    },
+    {
+      label: 'Контрольная сумма',
+      value: `${formatNumber(k.control_sum_mln, 1)} млн ₽`,
+      sub: 'Σ цена × объём',
+      color: 'var(--color-accent)',
+      bar: '100%',
+    },
   ]
 })
 
@@ -73,20 +91,31 @@ async function exportExcel(): Promise<void> {
 
       <!-- Баннер черновика -->
       <BlueprintPanel v-if="isDraft" class="draft-banner">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--st-warn)" stroke-width="1.6">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--st-warn)"
+          stroke-width="1.6"
+        >
           <path d="m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z" />
           <path d="M12 9v4m0 4h.01" />
         </svg>
         <div class="draft-text">
-          <b>Ваш участок ещё не присоединён.</b> Он показан ниже как черновик и не войдёт в
-          итоговую выгрузку, пока вы не сохраните его.
+          <b>Ваш участок ещё не присоединён.</b> Он показан ниже как черновик и не войдёт в итоговую
+          выгрузку, пока вы не сохраните его.
         </div>
         <AppButton variant="action" @click="submit">Присоединить мой участок</AppButton>
       </BlueprintPanel>
 
       <!-- Карточки участков -->
       <div class="parts">
-        <BlueprintPanel v-for="p in doc?.parts ?? []" :key="p.calculation_id" :data-mine="p.part_name === 'Ваш участок'">
+        <BlueprintPanel
+          v-for="p in doc?.parts ?? []"
+          :key="p.calculation_id"
+          :data-mine="p.part_name === 'Ваш участок'"
+        >
           <div class="part">
             <div class="part-top">
               <div class="part-name">
@@ -100,7 +129,17 @@ async function exportExcel(): Promise<void> {
             <div class="mono text-muted part-group">{{ p.part_name }}</div>
             <div class="part-meta">
               <span class="mono">{{ p.row_count }} строк</span>
-              <span class="mono cov" :style="{ color: (p.priced_pct ?? 0) >= 90 ? 'var(--good)' : (p.priced_pct ?? 0) >= 75 ? 'var(--mid)' : 'var(--bad)' }">
+              <span
+                class="mono cov"
+                :style="{
+                  color:
+                    (p.priced_pct ?? 0) >= 90
+                      ? 'var(--good)'
+                      : (p.priced_pct ?? 0) >= 75
+                        ? 'var(--mid)'
+                        : 'var(--bad)',
+                }"
+              >
                 {{ p.priced_pct ?? 0 }}% с ценой
               </span>
             </div>
@@ -121,26 +160,44 @@ async function exportExcel(): Promise<void> {
       <BlueprintPanel class="table-panel">
         <table class="table cons-table">
           <colgroup>
-            <col style="width: 150px" /><col style="width: 90px" /><col style="width: 16%" />
-            <col style="width: 22%" /><col style="width: 80px" /><col style="width: 56px" />
-            <col style="width: 90px" /><col style="width: 160px" /><col style="width: 140px" />
+            <col style="width: 150px" />
+            <col style="width: 90px" />
+            <col style="width: 16%" />
+            <col style="width: 22%" />
+            <col style="width: 80px" />
+            <col style="width: 56px" />
+            <col style="width: 90px" />
+            <col style="width: 160px" />
+            <col style="width: 140px" />
           </colgroup>
           <thead>
             <tr>
-              <th>аналитик / участок</th><th>row_id</th><th>клиент</th><th>материал</th>
-              <th>сделка</th><th>вал.</th><th class="num">объём, т</th><th>статус</th>
+              <th>аналитик / участок</th>
+              <th>row_id</th>
+              <th>клиент</th>
+              <th>материал</th>
+              <th>сделка</th>
+              <th>вал.</th>
+              <th class="num">объём, т</th>
+              <th>статус</th>
               <th class="num">итоговая цена</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(cr, i) in doc?.rows ?? []" :key="i" :data-draft="cr.is_draft">
               <td>
-                <span class="mono analyst">{{ cr.analyst_name }}{{ cr.is_draft ? ' · черновик' : '' }}</span>
+                <span class="mono analyst"
+                >{{ cr.analyst_name }}{{ cr.is_draft ? ' · черновик' : '' }}</span
+                >
               </td>
               <td class="mono dim">{{ cr.row.row_id }}</td>
               <td class="ellipsis">{{ cr.row.client_name }}</td>
               <td class="ellipsis">{{ cr.row.material_name }}</td>
-              <td><span class="mono deal" :data-spot="cr.row.deal_type === 'SPOT'">{{ cr.row.deal_type }}</span></td>
+              <td>
+                <span class="mono deal" :data-spot="cr.row.deal_type === 'SPOT'">{{
+                  cr.row.deal_type
+                }}</span>
+              </td>
               <td class="mono">{{ cr.row.currency }}</td>
               <td class="mono num">{{ formatInt(cr.row.volume) }}</td>
               <td><StatusChip :status="cr.row.status" /></td>

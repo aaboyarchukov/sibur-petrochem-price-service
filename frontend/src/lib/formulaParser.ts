@@ -41,7 +41,12 @@ export function parseFormulaExpression(text: string): ParsedFormula {
       continue
     }
     // Латинская функция-подобная запись, которой нет в списке разрешённых.
-    if (/^[A-Za-z_]+$/.test(raw) && raw === raw.toUpperCase() && raw.length <= 4 && /[A-Z]/.test(raw)) {
+    if (
+      /^[A-Za-z_]+$/.test(raw) &&
+      raw === raw.toUpperCase() &&
+      raw.length <= 4 &&
+      /[A-Z]/.test(raw)
+    ) {
       // не блокируем — это может быть короткая переменная; функции ловим по вхождению в ALLOWED.
     }
     if (!seenVar.has(raw)) {

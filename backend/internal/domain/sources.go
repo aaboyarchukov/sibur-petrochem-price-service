@@ -105,6 +105,26 @@ type MaterialGroup struct {
 	ValidTo      time.Time
 }
 
+// SourceFacets — значения для пикеров экрана параметров расчёта (из ssp).
+type SourceFacets struct {
+	Products  []ProductFacet
+	Clients   []ClientFacet
+	PeriodMin string // YYYY-MM, пусто — нет данных
+	PeriodMax string
+}
+
+// ProductFacet — продукт (материал НСИ) для выбора в параметрах.
+type ProductFacet struct {
+	ID   int64
+	Name string
+}
+
+// ClientFacet — клиент для выбора в параметрах.
+type ClientFacet struct {
+	ID   string
+	Name string
+}
+
 // Sources — все источники, загруженные в память для расчёта.
 type Sources struct {
 	Ssp            []SspRow

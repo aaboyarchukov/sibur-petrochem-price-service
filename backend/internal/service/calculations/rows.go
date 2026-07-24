@@ -255,6 +255,9 @@ func filterRows(rows []domain.CalcRow, query RowsQuery) []domain.CalcRow {
 		if query.Status != nil && row.Status != *query.Status {
 			continue
 		}
+		if query.OnlyFormulaErrors && !isFormulaError(row) {
+			continue
+		}
 		if needle != "" && !rowMatches(row, needle) {
 			continue
 		}
@@ -262,6 +265,15 @@ func filterRows(rows []domain.CalcRow, query RowsQuery) []domain.CalcRow {
 	}
 
 	return out
+}
+
+// isFormulaError — формула подобрана, но цены нет (тот же предикат, что KPI calc_error_rows).
+func isFormulaError(row domain.CalcRow) bool {
+	if row.CandidateCount == 0 || row.Price != nil {
+		return false
+	}
+
+	return row.Status == domain.StatusComponentError || row.Status == domain.StatusInvalidFormula
 }
 
 func rowMatches(row domain.CalcRow, needle string) bool {

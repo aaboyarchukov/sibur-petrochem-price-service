@@ -1,13 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type {
-  CalculationRow,
-  RowDetails,
-  Kpi,
-  RowStatus,
-  CalculationProgressEvent,
-} from '@/types'
-import type { RowsQuery } from '@/types'
+import type { CalculationRow, RowDetails, Kpi, RowStatus, CalculationProgressEvent } from '@/types'
+import type { RowsQuery, CalcParams } from '@/types'
 import { usePricingApi } from '@/services/provide'
 
 export const useCalculationStore = defineStore('calculation', () => {
@@ -21,6 +15,8 @@ export const useCalculationStore = defineStore('calculation', () => {
 
   const query = ref('')
   const statusFilter = ref<RowStatus | null>(null)
+  // Фильтр «ошибка формулы» — взаимоисключающий со statusFilter.
+  const onlyFormulaErrors = ref(false)
   const sort = ref<NonNullable<RowsQuery['sort']>>('row_id')
   const order = ref<'asc' | 'desc'>('asc')
 
@@ -32,8 +28,8 @@ export const useCalculationStore = defineStore('calculation', () => {
 
   const hasSelection = computed(() => details.value != null)
 
-  async function start(period: string): Promise<void> {
-    const calc = await api.createCalculation(period)
+  async function start(params: CalcParams): Promise<void> {
+    const calc = await api.createCalculation(params)
     calculationId.value = calc.id
   }
 
@@ -51,6 +47,7 @@ export const useCalculationStore = defineStore('calculation', () => {
     const page = await api.listRows(calculationId.value, {
       query: query.value || undefined,
       status: statusFilter.value ?? undefined,
+      onlyFormulaErrors: onlyFormulaErrors.value || undefined,
       sort: sort.value,
       order: order.value,
     })
@@ -118,6 +115,7 @@ export const useCalculationStore = defineStore('calculation', () => {
     total,
     query,
     statusFilter,
+    onlyFormulaErrors,
     sort,
     order,
     selectedRowId,

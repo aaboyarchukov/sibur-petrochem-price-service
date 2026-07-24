@@ -23,7 +23,7 @@ func TestService_Create(t *testing.T) {
 				AssertCalculationDone,
 			)
 
-			tc.State.Response.Info, tc.State.Response.Err = tc.SUT.Create(t.Context(), tc.State.Given.Period)
+			tc.State.Response.Info, tc.State.Response.Err = tc.SUT.Create(t.Context(), paramsOf(tc.State.Given.Period))
 		})
 
 		t.Run("subscriber after completion receives done event", func(t *testing.T) {
@@ -37,7 +37,7 @@ func TestService_Create(t *testing.T) {
 				AssertNoError,
 			)
 
-			info, err := tc.SUT.Create(t.Context(), tc.State.Given.Period)
+			info, err := tc.SUT.Create(t.Context(), paramsOf(tc.State.Given.Period))
 			require.NoError(t, err)
 
 			events, unsubscribe, err := tc.SUT.Subscribe(info.ID)
@@ -66,7 +66,70 @@ func TestService_Create(t *testing.T) {
 				AssertErrorIs(domain.ErrSourcesNotLoaded),
 			)
 
-			tc.State.Response.Info, tc.State.Response.Err = tc.SUT.Create(t.Context(), tc.State.Given.Period)
+			tc.State.Response.Info, tc.State.Response.Err = tc.SUT.Create(t.Context(), paramsOf(tc.State.Given.Period))
+		})
+	})
+}
+
+func TestService_CreateParams(t *testing.T) {
+	t.Run("should be able to be able", func(t *testing.T) {
+		tests := map[string]struct {
+			params CalcParams
+			total  int
+		}{
+			"all horizon":        {CalcParams{}, 7},
+			"single month range": {CalcParams{PeriodFrom: ptr("2026-07"), PeriodTo: ptr("2026-07")}, 1},
+			"product only":       {CalcParams{ProductIDs: []int64{100}}, 2},
+			"client only":        {CalcParams{ClientIDs: []string{"CL-2"}}, 1},
+			"product and client": {CalcParams{ProductIDs: []int64{100}, ClientIDs: []string{"CL-1"}}, 2},
+		}
+
+		for name, tc := range tests {
+			t.Run(name, func(t *testing.T) {
+				ctx := newTestContext(t)
+				ctx.Given(ArrangeDemoSources).When(ActLoadSources)
+
+				info, err := ctx.SUT.Create(t.Context(), tc.params)
+				require.NoError(t, err)
+				assert.Equal(t, tc.total, info.Total)
+			})
+		}
+	})
+
+	t.Run("should be able to not be able", func(t *testing.T) {
+		t.Run("empty intersection of product and client fails", func(t *testing.T) {
+			ctx := newTestContext(t)
+			ctx.Given(ArrangeDemoSources).When(ActLoadSources)
+
+			_, err := ctx.SUT.Create(t.Context(), CalcParams{
+				ProductIDs: []int64{100}, ClientIDs: []string{"CL-2"},
+			})
+			require.ErrorIs(t, err, domain.ErrSourcesNotLoaded)
+		})
+	})
+}
+
+func TestService_RowsOnlyFormulaErrors(t *testing.T) {
+	t.Run("should be able to be able", func(t *testing.T) {
+		t.Run("returns only matched formulas without price", func(t *testing.T) {
+			ctx := newTestContext(t)
+			ctx.Given(ArrangeDemoSources).When(ActLoadSources)
+
+			info, err := ctx.SUT.Create(t.Context(), CalcParams{})
+			require.NoError(t, err)
+
+			page, err := ctx.SUT.Rows(info.ID, RowsQuery{OnlyFormulaErrors: true})
+			require.NoError(t, err)
+			require.NotEmpty(t, page.Items)
+
+			for _, row := range page.Items {
+				assert.Positive(t, row.CandidateCount)
+				assert.Nil(t, row.Price)
+				assert.Contains(t,
+					[]domain.Status{domain.StatusComponentError, domain.StatusInvalidFormula},
+					row.Status,
+				)
+			}
 		})
 	})
 }
@@ -342,7 +405,7 @@ func TestService_Consolidated(t *testing.T) {
 			require.NoError(t, err)
 			tc.State.Response.Part = part
 
-			tc.State.Response.Doc, tc.State.Response.Err = tc.SUT.Consolidated(tc.State.Given.Period)
+			tc.State.Response.Doc, tc.State.Response.Err = tc.SUT.Consolidated(allPeriods)
 		})
 	})
 
@@ -370,10 +433,20 @@ func TestService_Consolidated(t *testing.T) {
 func mustCreate(t *testing.T, sut *Service, period string) Info {
 	t.Helper()
 
-	info, err := sut.Create(t.Context(), period)
+	info, err := sut.Create(t.Context(), paramsOf(period))
 	require.NoError(t, err)
 
 	return info
+}
+
+// paramsOf — параметры расчёта из строки периода: пусто/"all" → весь горизонт,
+// "YYYY-MM" → диапазон из одного месяца.
+func paramsOf(period string) CalcParams {
+	if period == "" || period == allPeriods {
+		return CalcParams{}
+	}
+
+	return CalcParams{PeriodFrom: &period, PeriodTo: &period}
 }
 
 // ── датасет: 6 строк периода 2026-06 + 1 строка чужого периода ──
@@ -536,7 +609,7 @@ func AssertCalculationDone(t *testing.T, state State) {
 	t.Helper()
 
 	assert.Equal(t, "done", state.Response.Info.Status)
-	assert.Equal(t, "2026-06", state.Response.Info.Period)
+	assert.Equal(t, "2026-06 — 2026-06", state.Response.Info.Period)
 	// 6 строк периода; строка другого периода не входит
 	assert.Equal(t, 6, state.Response.Info.Total)
 	assert.NotEmpty(t, state.Response.Info.ID)
@@ -662,7 +735,7 @@ func AssertPartJoined(t *testing.T, state State) {
 func AssertConsolidatedRows(t *testing.T, state State) {
 	t.Helper()
 
-	assert.Equal(t, "2026-06", state.Response.Doc.Period)
+	assert.Equal(t, "all", state.Response.Doc.Period)
 	assert.Len(t, state.Response.Doc.Rows, 6)
 	assert.Equal(t, 6, state.Response.Doc.TotalRows)
 }

@@ -77,6 +77,16 @@ func (h *Handler) ListSources(ctx context.Context, _ api.ListSourcesRequestObjec
 	return api.ListSources200JSONResponse{Items: items}, nil
 }
 
+// GetSourceFacets — продукты, клиенты и границы горизонта из ssp для пикеров параметров.
+func (h *Handler) GetSourceFacets(ctx context.Context, _ api.GetSourceFacetsRequestObject) (api.GetSourceFacetsResponseObject, error) {
+	facets, err := h.sources.SourceFacets(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return api.GetSourceFacets200JSONResponse(mapFacets(facets)), nil
+}
+
 // ResetSources — начальное состояние: отметки загрузки снимаются, расчёты
 // сессии удаляются. Данные таблиц остаются — повторная загрузка или демо
 // снова разрешают расчёт.

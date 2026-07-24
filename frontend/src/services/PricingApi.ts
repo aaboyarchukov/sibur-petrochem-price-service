@@ -3,6 +3,7 @@
 import type {
   Source,
   SourcePreview,
+  SourceFacets,
   Calculation,
   CalculationProgressEvent,
   Kpi,
@@ -11,6 +12,7 @@ import type {
   ConsolidatedDocument,
   ConsolidatedPart,
   RowsQuery,
+  CalcParams,
   ParsedFormula,
 } from '@/types'
 
@@ -27,12 +29,14 @@ export interface PricingApi {
   // Сброс в начальное состояние: отметки загрузки сняты, расчёты сессии удалены.
   resetSources(): Promise<Source[]>
   previewSource(key: string, limit?: number): Promise<SourcePreview>
+  // Значения для пикеров экрана параметров: продукты, клиенты, границы горизонта.
+  getSourceFacets(): Promise<SourceFacets>
 
   // Присутствие: поток числа аналитиков онлайн (SSE в http, константа в mock).
   streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe
 
-  // Расчёт.
-  createCalculation(period: string): Promise<Calculation>
+  // Расчёт с параметрами отбора (диапазон месяцев, продукты, клиенты).
+  createCalculation(params: CalcParams): Promise<Calculation>
   getCalculation(calculationId: string): Promise<Calculation>
   // Поток прогресса (SSE в http, таймер в mock). Возвращает функцию отписки.
   streamProgress(calculationId: string, onTick: ProgressHandler): Unsubscribe

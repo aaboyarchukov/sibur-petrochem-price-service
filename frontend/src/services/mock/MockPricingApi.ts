@@ -3,6 +3,7 @@ import type { PricingApi, ProgressHandler, Unsubscribe } from '@/services/Pricin
 import type {
   Source,
   SourcePreview,
+  SourceFacets,
   Calculation,
   Kpi,
   RowsPage,
@@ -12,6 +13,7 @@ import type {
   ConsolidatedPart,
   ConsolidatedRow,
   RowsQuery,
+  CalcParams,
   RowStatus,
   SelectionReason,
   ParsedFormula,
@@ -45,6 +47,22 @@ export class MockPricingApi implements PricingApi {
   private manual = new Map<string, number>()
   private selected = new Map<string, string>()
   private submitted = false
+  private activeParams: CalcParams = {}
+
+  // scopedRows — строки текущего расчёта: датасет, суженный параметрами (период/продукт/клиент).
+  private scopedRows(): RowRecord[] {
+    const { periodFrom, periodTo, productIds, clientIds } = this.activeParams
+    const products = new Set(productIds ?? [])
+    const clients = new Set(clientIds ?? [])
+    return this.rows.filter((r) => {
+      const month = r.period.slice(0, 7)
+      if (periodFrom && month < periodFrom) return false
+      if (periodTo && month > periodTo) return false
+      if (products.size > 0 && !products.has(Number(r.material_id))) return false
+      if (clients.size > 0 && !clients.has(r.client_id)) return false
+      return true
+    })
+  }
 
   // ── источники ──
   async listSources(): Promise<Source[]> {
@@ -84,19 +102,43 @@ export class MockPricingApi implements PricingApi {
 
   async previewSource(_key: string, limit = 5): Promise<SourcePreview> {
     const columns = ['row_id', 'period', 'client_name', 'material_name', 'forecast', 'deal_type']
-    const rows = this.rows.slice(0, limit).map((r) => [
-      r.row_id,
-      r.period,
-      r.client_name,
-      r.material_name,
-      r.volume == null ? null : String(r.volume),
-      r.deal_type,
-    ])
+    const rows = this.rows
+      .slice(0, limit)
+      .map((r) => [
+        r.row_id,
+        r.period,
+        r.client_name,
+        r.material_name,
+        r.volume == null ? null : String(r.volume),
+        r.deal_type,
+      ])
     return { columns, rows, total_rows: this.rows.length }
   }
 
+  async getSourceFacets(): Promise<SourceFacets> {
+    const products = new Map<number, string>()
+    const clients = new Map<string, string>()
+    let periodMin = ''
+    let periodMax = ''
+    for (const r of this.rows) {
+      products.set(Number(r.material_id), r.material_name)
+      clients.set(r.client_id, r.client_name)
+      const month = r.period.slice(0, 7)
+      if (!periodMin || month < periodMin) periodMin = month
+      if (month > periodMax) periodMax = month
+    }
+    const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name)
+    return {
+      products: [...products].map(([id, name]) => ({ id, name })).sort(byName),
+      clients: [...clients].map(([id, name]) => ({ id, name })).sort(byName),
+      period_min: periodMin || null,
+      period_max: periodMax || null,
+    }
+  }
+
   // ── расчёт ──
-  async createCalculation(): Promise<Calculation> {
+  async createCalculation(params: CalcParams = {}): Promise<Calculation> {
+    this.activeParams = params
     return this.calculation('running', 0)
   }
 
@@ -111,19 +153,24 @@ export class MockPricingApi implements PricingApi {
       percent = Math.min(100, percent + 8 + Math.round(Math.random() * 10))
       const processed = Math.round((total * percent) / 100)
       const done = percent >= 100
-      onTick({ status: done ? 'done' : 'running', processed_rows: processed, total_rows: total, percent })
+      onTick({
+        status: done ? 'done' : 'running',
+        processed_rows: processed,
+        total_rows: total,
+        percent,
+      })
       if (done) clearInterval(timer)
     }, PROGRESS_STEP_MS)
     return () => clearInterval(timer)
   }
 
   async getKpi(_calculationId?: string): Promise<Kpi> {
-    return this.computeKpi(this.rows)
+    return this.computeKpi(this.scopedRows())
   }
 
   // ── строки ──
   async listRows(_calculationId: string, query: RowsQuery = {}): Promise<RowsPage> {
-    let list = this.rows.map((r) => this.toRow(r))
+    let list = this.scopedRows().map((r) => this.toRow(r))
 
     const statusCounts: Record<string, number> = {}
     for (const row of list) statusCounts[row.status] = (statusCounts[row.status] ?? 0) + 1
@@ -135,6 +182,14 @@ export class MockPricingApi implements PricingApi {
       )
     }
     if (query.status) list = list.filter((r) => r.status === query.status)
+    if (query.onlyFormulaErrors) {
+      list = list.filter(
+        (r) =>
+          (r.candidate_count ?? 0) > 0 &&
+          r.final_price == null &&
+          (r.status === 'component_error' || r.status === 'invalid_formula'),
+      )
+    }
 
     if (query.sort) {
       const dir = query.order === 'desc' ? -1 : 1
@@ -246,7 +301,10 @@ export class MockPricingApi implements PricingApi {
       final_price: this.effPrice(r),
       candidate_count: r.candidates.length,
       requires_review: status === 'formula_conflict',
-      warning: r.base_status === 'calculated_expired' ? 'использована просроченная формула, срок продлён' : null,
+      warning:
+        r.base_status === 'calculated_expired'
+          ? 'использована просроченная формула, срок продлён'
+          : null,
       error: this.rowError(r),
       matched: this.isMatched(r),
     }
@@ -383,7 +441,9 @@ export class MockPricingApi implements PricingApi {
     }, 0)
 
     // % непонятных ошибок: ошибки вне классификатора {no_formula, component_error, invalid_formula}.
-    const errorRows = records.filter((r) => this.rowError(r) != null || CLASSIFIED_ERRORS.has(this.effStatus(r)))
+    const errorRows = records.filter(
+      (r) => this.rowError(r) != null || CLASSIFIED_ERRORS.has(this.effStatus(r)),
+    )
     const unclassified = errorRows.filter((r) => !CLASSIFIED_ERRORS.has(this.effStatus(r)))
 
     return {
@@ -424,7 +484,11 @@ export class MockPricingApi implements PricingApi {
     }
   }
 
-  private compareRows(a: CalculationRow, b: CalculationRow, key: NonNullable<RowsQuery['sort']>): number {
+  private compareRows(
+    a: CalculationRow,
+    b: CalculationRow,
+    key: NonNullable<RowsQuery['sort']>,
+  ): number {
     switch (key) {
       case 'price':
         return (a.final_price ?? -1) - (b.final_price ?? -1)

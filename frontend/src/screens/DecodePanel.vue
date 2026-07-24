@@ -31,7 +31,8 @@ const priceNote = computed(() => {
   const r = row.value
   if (!d || !r) return ''
   if (d.manual_price != null) return `Введено вручную · эталон ${formatNumber(d.reference_price)}`
-  if (r.final_price == null) return applied.value ? 'Нет значения компонента' : 'Формула не подобрана'
+  if (r.final_price == null)
+    return applied.value ? 'Нет значения компонента' : 'Формула не подобрана'
   if (r.matched) return 'В пределах ±3% от эталона'
   return `Отклонение от эталона >3% (${formatNumber(d.reference_price)})`
 })
@@ -87,11 +88,21 @@ async function resetManual(): Promise<void> {
           <AppButton class="close" @click="calculation.closeDetails()">✕</AppButton>
         </div>
         <div class="facts">
-          <div><span class="text-muted">Клиент</span> <b>{{ row.client_name }}</b></div>
-          <div><span class="text-muted">Период</span> <b class="mono">{{ row.period }}</b></div>
-          <div><span class="text-muted">Сделка</span> <b class="mono">{{ row.deal_type }}</b></div>
-          <div><span class="text-muted">Валюта</span> <b class="mono">{{ row.currency }}</b></div>
-          <div><span class="text-muted">Объём</span> <b class="mono">{{ formatInt(row.volume) }} т</b></div>
+          <div>
+            <span class="text-muted">Клиент</span> <b>{{ row.client_name }}</b>
+          </div>
+          <div>
+            <span class="text-muted">Период</span> <b class="mono">{{ row.period }}</b>
+          </div>
+          <div>
+            <span class="text-muted">Сделка</span> <b class="mono">{{ row.deal_type }}</b>
+          </div>
+          <div>
+            <span class="text-muted">Валюта</span> <b class="mono">{{ row.currency }}</b>
+          </div>
+          <div>
+            <span class="text-muted">Объём</span> <b class="mono">{{ formatInt(row.volume) }} т</b>
+          </div>
         </div>
         <StatusChip :status="row.status" class="head-chip" />
       </div>
@@ -120,14 +131,21 @@ async function resetManual(): Promise<void> {
             <table class="table components-table">
               <thead>
                 <tr>
-                  <th>перем.</th><th>тип</th><th class="num">значение</th>
-                  <th>котировка</th><th>источник · дата</th>
+                  <th>перем.</th>
+                  <th>тип</th>
+                  <th class="num">значение</th>
+                  <th>котировка</th>
+                  <th>источник · дата</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(c, i) in details?.components ?? []" :key="i">
                   <td class="mono strong">{{ c.var_name }}</td>
-                  <td><span class="mono type-chip" :data-kind="typeKind(c.type)">{{ c.type_label }}</span></td>
+                  <td>
+                    <span class="mono type-chip" :data-kind="typeKind(c.type)">{{
+                      c.type_label
+                    }}</span>
+                  </td>
                   <td class="mono num" :data-error="c.status === 'error'">
                     {{ c.value == null ? '— нет' : formatNumber(c.value, 4) }}
                   </td>
@@ -135,7 +153,12 @@ async function resetManual(): Promise<void> {
                   <td class="source">
                     <div>{{ c.source }}</div>
                     <div class="mono text-muted">
-                      {{ c.error ?? (c.value_date ? `${c.value_date}${c.version_type ? ' · ' + c.version_type : ''}` : '—') }}
+                      {{
+                        c.error ??
+                          (c.value_date
+                            ? `${c.value_date}${c.version_type ? ' · ' + c.version_type : ''}`
+                            : '—')
+                      }}
                     </div>
                     <div v-if="c.warning" class="mono comp-warning">⚠ {{ c.warning }}</div>
                   </td>
@@ -147,7 +170,9 @@ async function resetManual(): Promise<void> {
           <!-- Несколько формул -->
           <div v-if="row.requires_review" class="multi">
             <div class="multi-head">
-              <div class="multi-title">Подошло несколько формул ({{ details?.equal_priority_count }})</div>
+              <div class="multi-title">
+                Подошло несколько формул ({{ details?.equal_priority_count }})
+              </div>
               <AppButton variant="action" @click="showModal = true">Выбрать формулу</AppButton>
             </div>
             <p>По умолчанию применена самая новая. Можно переключить — цена и KPI пересчитаются.</p>
@@ -169,7 +194,11 @@ async function resetManual(): Promise<void> {
               {{ formatNumber(conversion.from_rate) }} ({{ conversion.version_type }})
             </div>
           </div>
-          <AppButton v-if="details?.manual_price != null" @click="resetManual">Сбросить правку</AppButton>
+          <AppButton v-if="details?.manual_price != null" @click="resetManual"
+          >
+            Сбросить правку
+          </AppButton
+          >
         </div>
         <div class="manual">
           <div class="manual-input">

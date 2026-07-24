@@ -19,7 +19,10 @@ defineProps<{
         <div v-if="sub" class="sub">{{ sub }}</div>
       </div>
       <div class="track">
-        <div class="fill" :style="{ width: bar ?? '0%', background: color ?? 'var(--color-accent)' }" />
+        <div
+          class="fill"
+          :style="{ width: bar ?? '0%', background: color ?? 'var(--color-accent)' }"
+        />
       </div>
     </div>
   </BlueprintPanel>

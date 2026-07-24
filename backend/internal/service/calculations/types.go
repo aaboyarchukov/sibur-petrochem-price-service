@@ -27,12 +27,13 @@ type ProgressEvent struct {
 
 // RowsQuery — фильтры/сортировка/пагинация таблицы строк.
 type RowsQuery struct {
-	Status *domain.Status
-	Query  string
-	Sort   string // row_id | client | material | volume | price
-	Order  string // asc | desc
-	Limit  int
-	Offset int
+	Status            *domain.Status
+	Query             string
+	Sort              string // row_id | client | material | volume | price
+	Order             string // asc | desc
+	Limit             int
+	Offset            int
+	OnlyFormulaErrors bool // формула подобрана, цены нет, статус component_error | invalid_formula
 }
 
 // RowsPage — страница строк + счётчики статусов до фильтрации.

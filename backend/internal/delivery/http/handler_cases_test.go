@@ -135,7 +135,35 @@ func TestSources(t *testing.T) {
 				t, tc.SUT, nethttp.MethodGet, "/api/v1/sources/ssp/preview?limit=3", nil,
 			)
 		})
+
+		t.Run("returns facets from ssp", func(t *testing.T) {
+			tc := newTestContext(t)
+
+			tc.Given(ArrangeDemo).When(ActLoadSources).Then(
+				AssertCode(nethttp.StatusOK),
+				AssertFacets,
+			)
+
+			tc.State.Response.Code, tc.State.Response.Body, tc.State.Response.Raw = do(
+				t, tc.SUT, nethttp.MethodGet, "/api/v1/sources/facets", nil,
+			)
+		})
 	})
+}
+
+func AssertFacets(t *testing.T, state State) {
+	t.Helper()
+
+	products, ok := state.Response.Body["products"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, products)
+
+	clients, ok := state.Response.Body["clients"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, clients)
+
+	assert.Equal(t, "2026-06", state.Response.Body["period_min"])
+	assert.Equal(t, "2026-06", state.Response.Body["period_max"])
 }
 
 func TestCalculationsEndpoints(t *testing.T) {
@@ -206,7 +234,7 @@ func TestCalculationsEndpoints(t *testing.T) {
 			)
 
 			tc.State.Response.Code, tc.State.Response.Body, tc.State.Response.Raw = do(
-				t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": "2031-01"},
+				t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", calcBody("2031-01"),
 			)
 		})
 
@@ -367,7 +395,7 @@ func TestFormulasAndConsolidated(t *testing.T) {
 			require.Equal(t, "joined", body["status"])
 
 			tc.State.Response.Code, tc.State.Response.Body, tc.State.Response.Raw = do(
-				t, tc.SUT, nethttp.MethodGet, "/api/v1/consolidated/2026-06", nil,
+				t, tc.SUT, nethttp.MethodGet, "/api/v1/consolidated/all", nil,
 			)
 		})
 	})
@@ -423,7 +451,7 @@ func AssertCalculationBody(t *testing.T, state State) {
 	t.Helper()
 
 	assert.Equal(t, "done", state.Response.Body["status"])
-	assert.Equal(t, "2026-06", state.Response.Body["period"])
+	assert.Equal(t, "2026-06 — 2026-06", state.Response.Body["period"])
 
 	progress, ok := state.Response.Body["progress"].(map[string]any)
 	require.True(t, ok)

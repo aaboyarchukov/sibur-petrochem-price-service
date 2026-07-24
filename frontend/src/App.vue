@@ -50,8 +50,9 @@ function go(name: string, enabled: boolean): void {
       <div class="brand">
         <div class="logo">P</div>
         <div class="brand-text">
-          PETRO&#8202;PRICE<span class="accent">.</span>
-          <br /><span class="brand-sub">Расчёт цен</span>
+          PETRO&#8202;PRICE<span class="accent">.</span> <br /><span class="brand-sub"
+          >Расчёт цен</span
+          >
         </div>
       </div>
 
@@ -60,11 +61,14 @@ function go(name: string, enabled: boolean): void {
           v-for="s in steps"
           :key="s.name"
           class="mono step"
-          :data-active="route.name === s.name || (s.name === 'results' && route.name === 'computing')"
+          :data-active="
+            route.name === s.name || (s.name === 'results' && route.name === 'computing')
+          "
           :disabled="!s.enabled"
           @click="go(s.name, s.enabled)"
         >
-          <span class="num">{{ s.num }}</span>{{ s.label }}
+          <span class="num">{{ s.num }}</span
+          >{{ s.label }}
         </button>
         <div class="sep" />
         <button

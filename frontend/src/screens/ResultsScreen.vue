@@ -62,7 +62,12 @@ const kpiCards = computed(() => {
       label: 'Строк с ошибкой расчёта',
       value: String(k.calc_error_rows),
       sub: 'формула есть, цены нет',
-      color: k.calc_error_rows === 0 ? 'var(--good)' : k.calc_error_rows <= 4 ? 'var(--mid)' : 'var(--bad)',
+      color:
+        k.calc_error_rows === 0
+          ? 'var(--good)'
+          : k.calc_error_rows <= 4
+            ? 'var(--mid)'
+            : 'var(--bad)',
       bar: `${Math.min(100, k.calc_error_rows * 12)}%`,
     },
     {
@@ -82,9 +87,12 @@ const kpiCards = computed(() => {
   ]
 })
 
-const FILTERS: { key: RowStatus | 'all'; label: string }[] = [
+type FilterKey = RowStatus | 'all' | 'formula_error'
+
+const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'calculated', label: 'Посчитано' },
+  { key: 'formula_error', label: 'Ошибка формулы' },
   { key: 'formula_conflict', label: 'Выбрать' },
   { key: 'no_formula', label: 'Нет цены' },
   { key: 'component_error', label: 'Нет котир.' },
@@ -93,16 +101,25 @@ const FILTERS: { key: RowStatus | 'all'; label: string }[] = [
   { key: 'spot_not_calculated', label: 'SPOT' },
 ]
 
+function filterCount(key: FilterKey): number {
+  if (key === 'all') return calculation.total
+  if (key === 'formula_error') return calculation.kpi?.calc_error_rows ?? 0
+  return calculation.statusCounts[key] ?? 0
+}
+
+function isActive(key: FilterKey): boolean {
+  if (calculation.onlyFormulaErrors) return key === 'formula_error'
+  return (calculation.statusFilter ?? 'all') === key
+}
+
 const filters = computed(() =>
-  FILTERS.map((f) => ({
-    ...f,
-    count: f.key === 'all' ? calculation.total : (calculation.statusCounts[f.key] ?? 0),
-    active: (calculation.statusFilter ?? 'all') === f.key,
-  })),
+  FILTERS.map((f) => ({ ...f, count: filterCount(f.key), active: isActive(f.key) })),
 )
 
-function applyFilter(key: RowStatus | 'all'): void {
-  calculation.statusFilter = key === 'all' ? null : key
+function applyFilter(key: FilterKey): void {
+  // «Ошибка формулы» и фильтр по статусу — взаимоисключающие.
+  calculation.onlyFormulaErrors = key === 'formula_error'
+  calculation.statusFilter = key === 'all' || key === 'formula_error' ? null : key
   void calculation.refresh()
 }
 
@@ -132,8 +149,16 @@ function saveMyPart(): void {
       <!-- Тулбар -->
       <div class="toolbar">
         <div class="search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
           <input
             v-model="searchInput"
@@ -153,7 +178,14 @@ function saveMyPart(): void {
           </button>
         </div>
         <AppButton @click="exportExcel">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
             <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
           </svg>
           Excel
@@ -167,24 +199,41 @@ function saveMyPart(): void {
       <div class="table-scroll">
         <table class="table results-table">
           <colgroup>
-            <col style="width: 88px" /><col style="width: 78px" /><col style="width: 16%" />
-            <col style="width: 20%" /><col style="width: 90px" /><col style="width: 60px" />
-            <col style="width: 96px" /><col style="width: 168px" /><col style="width: 62px" />
-            <col style="width: 44px" /><col style="width: 144px" />
+            <col style="width: 88px" />
+            <col style="width: 78px" />
+            <col style="width: 16%" />
+            <col style="width: 20%" />
+            <col style="width: 90px" />
+            <col style="width: 60px" />
+            <col style="width: 96px" />
+            <col style="width: 168px" />
+            <col style="width: 62px" />
+            <col style="width: 44px" />
+            <col style="width: 144px" />
           </colgroup>
           <thead>
             <tr>
-              <th class="sortable" @click="calculation.setSort('row_id')">row_id{{ sortIndicator('row_id') }}</th>
+              <th class="sortable" @click="calculation.setSort('row_id')">
+                row_id{{ sortIndicator('row_id') }}
+              </th>
               <th>период</th>
-              <th class="sortable" @click="calculation.setSort('client')">клиент{{ sortIndicator('client') }}</th>
-              <th class="sortable" @click="calculation.setSort('material')">материал{{ sortIndicator('material') }}</th>
+              <th class="sortable" @click="calculation.setSort('client')">
+                клиент{{ sortIndicator('client') }}
+              </th>
+              <th class="sortable" @click="calculation.setSort('material')">
+                материал{{ sortIndicator('material') }}
+              </th>
               <th>сделка</th>
               <th>вал.</th>
-              <th class="num sortable" @click="calculation.setSort('volume')">объём, т{{ sortIndicator('volume') }}</th>
+              <th class="num sortable" @click="calculation.setSort('volume')">
+                объём, т{{ sortIndicator('volume') }}
+              </th>
               <th>статус подбора</th>
               <th class="num">канд.</th>
               <th title="предупреждение">⚠</th>
-              <th class="num sortable" @click="calculation.setSort('price')">итоговая цена{{ sortIndicator('price') }}</th>
+              <th class="num sortable" @click="calculation.setSort('price')">
+                итоговая цена{{ sortIndicator('price') }}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -200,7 +249,9 @@ function saveMyPart(): void {
               <td class="ellipsis">{{ row.client_name }}</td>
               <td class="ellipsis">{{ row.material_name }}</td>
               <td>
-                <span class="mono deal" :data-spot="row.deal_type === 'SPOT'">{{ row.deal_type }}</span>
+                <span class="mono deal" :data-spot="row.deal_type === 'SPOT'">{{
+                  row.deal_type
+                }}</span>
               </td>
               <td class="mono">{{ row.currency }}</td>
               <td class="mono num">{{ formatInt(row.volume) }}</td>

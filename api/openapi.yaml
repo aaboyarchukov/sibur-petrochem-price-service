@@ -110,6 +110,23 @@ paths:
                     items:
                       $ref: '#/components/schemas/Source'
 
+  /sources/facets:
+    get:
+      tags: [sources]
+      operationId: getSourceFacets
+      summary: Значения для пикеров параметров расчёта
+      description: |
+        Уникальные продукты и клиенты из загруженного прогноза спроса (ssp)
+        и границы горизонта (min/max месяц) для наполнения экрана параметров.
+        При отсутствии данных ssp списки пусты, границы — null.
+      responses:
+        '200':
+          description: Фасеты источников
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceFacets'
+
   /sources/{sourceKey}/file:
     post:
       tags: [sources]
@@ -306,6 +323,14 @@ paths:
             type: integer
             minimum: 0
             default: 0
+        - name: only_formula_errors
+          in: query
+          description: |
+            Только строки с ошибкой формулы: формула подобрана (candidate_count > 0),
+            цены нет, статус ∈ {component_error, invalid_formula}. Взаимоисключающе со status.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Страница строк + счётчики статусов
@@ -725,24 +750,92 @@ components:
           type: integer
           example: 4812
 
+    SourceFacets:
+      type: object
+      description: Значения для пикеров экрана параметров расчёта (из ssp)
+      required: [products, clients]
+      properties:
+        products:
+          type: array
+          description: Уникальные продукты, отсортированы по имени
+          items:
+            $ref: '#/components/schemas/ProductFacet'
+        clients:
+          type: array
+          description: Уникальные клиенты, отсортированы по имени
+          items:
+            $ref: '#/components/schemas/ClientFacet'
+        period_min:
+          type: string
+          description: Минимальный месяц горизонта YYYY-MM (null — нет данных)
+          nullable: true
+          example: '2026-06'
+        period_max:
+          type: string
+          description: Максимальный месяц горизонта YYYY-MM (null — нет данных)
+          nullable: true
+          example: '2027-03'
+
+    ProductFacet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Код материала НСИ (mtr_nsi_code)
+          example: 226814
+        name:
+          type: string
+          example: Полипропилен, марка PP H030 GP/3
+
+    ClientFacet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: Идентификатор клиента (client_id)
+          example: CL-10328
+        name:
+          type: string
+          example: Клиент 328
+
     # ── расчёт ──
 
     CreateCalculationRequest:
       type: object
-      description: Параметры запуска расчёта
-      required: [period]
+      description: |
+        Параметры запуска расчёта. Диапазон месяцев period_from..period_to
+        (обе границы необязательны — отсутствие обоих означает «весь горизонт»);
+        product_ids и client_ids — сужение по продуктам и клиентам (пустой список = все).
+        Внутри одного фильтра значения объединяются по OR, между продуктом и клиентом — AND.
       properties:
-        period:
+        period_from:
           type: string
-          description: Расчётный период YYYY-MM либо 'all' — расчёт по всему горизонту спроса
-          pattern: '^(all|\d{4}-\d{2})$'
-          example: all
-        material_group_ids:
+          description: Начало диапазона, месяц YYYY-MM (null — с начала горизонта)
+          pattern: '^\d{4}-\d{2}$'
+          nullable: true
+          example: '2026-06'
+        period_to:
+          type: string
+          description: Конец диапазона, месяц YYYY-MM включительно (null — до конца горизонта)
+          pattern: '^\d{4}-\d{2}$'
+          nullable: true
+          example: '2026-09'
+        product_ids:
           type: array
-          description: Опциональное сужение по группам материалов
+          description: Сужение по кодам материалов НСИ (пусто — все продукты)
+          items:
+            type: integer
+            format: int64
+          example: [226814, 1382340]
+        client_ids:
+          type: array
+          description: Сужение по идентификаторам клиентов (пусто — все клиенты)
           items:
             type: string
-          example: [MT00000116]
+          example: [CL-10328]
 
     CalculationStatus:
       type: string

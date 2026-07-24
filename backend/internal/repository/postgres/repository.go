@@ -4,6 +4,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"sort"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"sibur-petrochem-price-service/internal/domain"
 
@@ -76,6 +79,52 @@ func (r *Repository) LoadSources(ctx context.Context) (domain.Sources, error) {
 		CurrencyRates:  mapCurrencyRates(rates),
 		MaterialGroups: mapMaterialGroups(groups),
 	}, nil
+}
+
+// SourceFacets — уникальные продукты, клиенты и границы горизонта из ssp
+// для пикеров экрана параметров; продукты/клиенты отсортированы по имени.
+func (r *Repository) SourceFacets(ctx context.Context) (domain.SourceFacets, error) {
+	products, err := r.queries.ListSspProducts(ctx)
+	if err != nil {
+		return domain.SourceFacets{}, fmt.Errorf("list ssp products: %w", err)
+	}
+
+	clients, err := r.queries.ListSspClients(ctx)
+	if err != nil {
+		return domain.SourceFacets{}, fmt.Errorf("list ssp clients: %w", err)
+	}
+
+	bounds, err := r.queries.SspPeriodBounds(ctx)
+	if err != nil {
+		return domain.SourceFacets{}, fmt.Errorf("ssp period bounds: %w", err)
+	}
+
+	facets := domain.SourceFacets{
+		Products:  make([]domain.ProductFacet, 0, len(products)),
+		Clients:   make([]domain.ClientFacet, 0, len(clients)),
+		PeriodMin: monthOrEmpty(bounds.PeriodMin),
+		PeriodMax: monthOrEmpty(bounds.PeriodMax),
+	}
+	for _, product := range products {
+		facets.Products = append(facets.Products, domain.ProductFacet{ID: product.MtrNsiCode, Name: product.MtrNsiName})
+	}
+	for _, client := range clients {
+		facets.Clients = append(facets.Clients, domain.ClientFacet{ID: client.ClientID, Name: client.ClientName})
+	}
+
+	sort.SliceStable(facets.Products, func(i, j int) bool { return facets.Products[i].Name < facets.Products[j].Name })
+	sort.SliceStable(facets.Clients, func(i, j int) bool { return facets.Clients[i].Name < facets.Clients[j].Name })
+
+	return facets, nil
+}
+
+// monthOrEmpty — граница горизонта в формате YYYY-MM; пусто при отсутствии данных.
+func monthOrEmpty(date pgtype.Date) string {
+	if !date.Valid {
+		return ""
+	}
+
+	return date.Time.Format("2006-01")
 }
 
 // SourceCounts — количество строк в каждом источнике (для GET /sources).

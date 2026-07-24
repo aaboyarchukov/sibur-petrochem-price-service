@@ -5,6 +5,7 @@ import type { PricingApi, ProgressHandler, Unsubscribe } from '@/services/Pricin
 import type {
   Source,
   SourcePreview,
+  SourceFacets,
   Calculation,
   Kpi,
   RowsPage,
@@ -12,6 +13,7 @@ import type {
   ConsolidatedDocument,
   ConsolidatedPart,
   RowsQuery,
+  CalcParams,
   ParsedFormula,
 } from '@/types'
 
@@ -39,9 +41,11 @@ async function sendJson<T>(path: string, method: string, body?: unknown): Promis
 
 function buildRowsQuery(query: RowsQuery = {}): string {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
+  const { onlyFormulaErrors, ...rest } = query
+  for (const [key, value] of Object.entries(rest)) {
     if (value != null) params.set(key, String(value))
   }
+  if (onlyFormulaErrors) params.set('only_formula_errors', 'true')
   const qs = params.toString()
   return qs ? `?${qs}` : ''
 }
@@ -76,6 +80,10 @@ export class HttpPricingApi implements PricingApi {
     return getJson<SourcePreview>(`/sources/${key}/preview?limit=${limit}`)
   }
 
+  getSourceFacets(): Promise<SourceFacets> {
+    return getJson<SourceFacets>('/sources/facets')
+  }
+
   streamPresence(onCount: (analystsOnline: number) => void): Unsubscribe {
     const source = new EventSource(`${BASE}/presence/events`)
     source.onmessage = (event) => {
@@ -85,8 +93,14 @@ export class HttpPricingApi implements PricingApi {
     return () => source.close()
   }
 
-  createCalculation(period: string): Promise<Calculation> {
-    return sendJson<Calculation>('/calculations', 'POST', { period })
+  createCalculation(params: CalcParams): Promise<Calculation> {
+    // Пустые/отсутствующие поля опускаем — бэкенд трактует как «весь горизонт» / «все».
+    const body: Record<string, unknown> = {}
+    if (params.periodFrom) body.period_from = params.periodFrom
+    if (params.periodTo) body.period_to = params.periodTo
+    if (params.productIds?.length) body.product_ids = params.productIds
+    if (params.clientIds?.length) body.client_ids = params.clientIds
+    return sendJson<Calculation>('/calculations', 'POST', body)
   }
 
   getCalculation(calculationId: string): Promise<Calculation> {
@@ -117,13 +131,20 @@ export class HttpPricingApi implements PricingApi {
   }
 
   setManualPrice(calculationId: string, rowId: string, price: number): Promise<RowDetails> {
-    return sendJson<RowDetails>(`/calculations/${calculationId}/rows/${rowId}/manual-price`, 'PUT', {
-      price,
-    })
+    return sendJson<RowDetails>(
+      `/calculations/${calculationId}/rows/${rowId}/manual-price`,
+      'PUT',
+      {
+        price,
+      },
+    )
   }
 
   resetManualPrice(calculationId: string, rowId: string): Promise<RowDetails> {
-    return sendJson<RowDetails>(`/calculations/${calculationId}/rows/${rowId}/manual-price`, 'DELETE')
+    return sendJson<RowDetails>(
+      `/calculations/${calculationId}/rows/${rowId}/manual-price`,
+      'DELETE',
+    )
   }
 
   selectFormula(calculationId: string, rowId: string, formulaId: string): Promise<RowDetails> {

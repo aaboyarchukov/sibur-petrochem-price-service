@@ -20,9 +20,6 @@ const AnalystName = "А. Смирнов"
 
 const partName = "Ваш участок"
 
-// AllPeriods — расчёт по всему горизонту спроса (без фильтра по месяцу).
-const AllPeriods = "all"
-
 // SourcesLoader — источники расчёта (реализация — repository/postgres).
 type SourcesLoader interface {
 	LoadSources(ctx context.Context) (domain.Sources, error)
@@ -67,25 +64,23 @@ func (s *Service) Reset() {
 	s.order = nil
 }
 
-// Create — загрузка источников, прогон движка, регистрация расчёта.
-// period == AllPeriods — весь горизонт спроса; иначе фильтр по месяцу (YYYY-MM).
+// Create — загрузка источников, прогон движка по строкам спроса из пересечения
+// фильтров params, регистрация расчёта. Пустые фильтры = весь горизонт.
 // Расчёт синхронный (сотни-тысячи строк за доли секунды); контрактный статус — done.
-func (s *Service) Create(ctx context.Context, period string) (Info, error) {
+func (s *Service) Create(ctx context.Context, params CalcParams) (Info, error) {
 	src, err := s.loader.LoadSources(ctx)
 	if err != nil {
 		return Info{}, fmt.Errorf("load sources: %w", err)
 	}
 
-	if period != AllPeriods {
-		src.Ssp = filterByPeriod(src.Ssp, period)
-	}
+	src.Ssp = filterDemand(src.Ssp, params)
 	if len(src.Ssp) == 0 {
-		return Info{}, fmt.Errorf("%w: нет строк спроса за период %s", domain.ErrSourcesNotLoaded, period)
+		return Info{}, fmt.Errorf("%w: нет строк спроса за период %s", domain.ErrSourcesNotLoaded, params.label())
 	}
 
 	calc := &calculation{
 		id:        uuid.NewString(),
-		period:    period,
+		period:    params.label(),
 		createdAt: time.Now().UTC(),
 		manual:    map[string]float64{},
 		selected:  map[string]string{},
@@ -99,18 +94,6 @@ func (s *Service) Create(ctx context.Context, period string) (Info, error) {
 	s.mu.Unlock()
 
 	return calc.info(), nil
-}
-
-// filterByPeriod — строки спроса за месяц period (формат YYYY-MM).
-func filterByPeriod(rows []domain.SspRow, period string) []domain.SspRow {
-	filtered := make([]domain.SspRow, 0, len(rows))
-	for _, row := range rows {
-		if row.Period.Format("2006-01") == period {
-			filtered = append(filtered, row)
-		}
-	}
-
-	return filtered
 }
 
 func (s *Service) Get(id string) (Info, error) {
@@ -155,13 +138,18 @@ func (s *Service) find(id string) (*calculation, error) {
 	return calc, nil
 }
 
+// allPeriods — вайлдкард сводного документа: все расчёты сессии (расчёт больше
+// не привязан к одному месяцу — параметры отбора произвольные).
+const allPeriods = "all"
+
 func (s *Service) byPeriod(period string) []*calculation {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	var out []*calculation
 	for _, id := range s.order {
-		if calc := s.calcs[id]; calc.period == period {
+		calc := s.calcs[id]
+		if period == allPeriods || calc.period == period {
 			out = append(out, calc)
 		}
 	}

@@ -22,6 +22,7 @@ import (
 type SourcesProvider interface {
 	LoadSources(ctx context.Context) (domain.Sources, error)
 	SourceCounts(ctx context.Context) (map[string]int64, error)
+	SourceFacets(ctx context.Context) (domain.SourceFacets, error)
 	ReplaceSsp(ctx context.Context, rows []domain.SspRow) error
 	ReplaceFormulas(ctx context.Context, rows []domain.Formula) error
 }

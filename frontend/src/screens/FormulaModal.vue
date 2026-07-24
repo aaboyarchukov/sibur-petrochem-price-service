@@ -54,8 +54,8 @@ async function confirm(): Promise<void> {
         <AppButton class="close" @click="emit('close')">✕</AppButton>
       </div>
       <p class="text-muted intro">
-        Найдено {{ alternatives.length }} подходящих формул. Выберите применяемую — цена строки и KPI
-        пересчитаются.
+        Найдено {{ alternatives.length }} подходящих формул. Выберите применяемую — цена строки и
+        KPI пересчитаются.
       </p>
 
       <div class="cards">
@@ -79,7 +79,10 @@ async function confirm(): Promise<void> {
             </div>
             <div class="mono validity">
               <template v-if="a.match_scope">Подбор: {{ SCOPE_LABELS[a.match_scope] }}</template>
-              <template v-if="a.selection_reason"> · {{ REASON_LABELS[a.selection_reason] }}</template>
+              <template v-if="a.selection_reason">
+                · {{ REASON_LABELS[a.selection_reason] }}
+              </template
+              >
               <template v-if="(a.equal_priority_count ?? 0) > 1">
                 · равноприоритетных: {{ a.equal_priority_count }}
               </template>
@@ -92,7 +95,10 @@ async function confirm(): Promise<void> {
             <div class="mono price">
               {{ a.price == null ? 'нет цены' : formatPrice(a.price, row.currency) }}
             </div>
-            <div v-if="a.price_formula_currency != null && a.formula_currency" class="mono in-currency">
+            <div
+              v-if="a.price_formula_currency != null && a.formula_currency"
+              class="mono in-currency"
+            >
               {{ formatPrice(a.price_formula_currency, a.formula_currency) }}
             </div>
           </div>

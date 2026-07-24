@@ -4,1420 +4,1693 @@
  */
 
 export interface paths {
-    "/sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Статус всех источников данных
-         * @description Возвращает все 8 источников: 2 пользовательских (`ssp`, `formulas`)
-         *     и 6 справочников сервиса. Для каждого — статус загрузки и количество строк.
-         */
-        get: operations["listSources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sources/{sourceKey}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Загрузить файл источника
-         * @description Загрузка Excel-файла источника (multipart). В MVP пользователь загружает
-         *     `ssp` и `formulas`; остальные источники доступны для перезаливки при необходимости.
-         */
-        post: operations["uploadSourceFile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sources/{sourceKey}/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Превью первых строк источника */
-        get: operations["previewSource"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Запустить расчёт
-         * @description Запускает асинхронный расчёт цен по загруженному прогнозу спроса.
-         *     Ошибка одной строки не останавливает расчёт — проблемные строки
-         *     помечаются статусом (`no_formula`, `missing_quote`).
-         */
-        post: operations["createCalculation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Статус и прогресс расчёта */
-        get: operations["getCalculation"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Поток прогресса расчёта (SSE)
-         * @description Server-Sent Events поток прогресса расчёта. Каждое событие — JSON
-         *     `CalculationProgressEvent`. Поток завершается событием со `status: done`
-         *     (или `failed`). Клиент подписывается через EventSource.
-         */
-        get: operations["streamCalculationProgress"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/kpi": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Сводные KPI расчёта
-         * @description KPI пересчитываются после ручных правок и выбора формул.
-         */
-        get: operations["getCalculationKpi"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/rows": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Строки результата расчёта
-         * @description Таблица результатов с фильтрацией, поиском, сортировкой и пагинацией.
-         *     `status_counts` — количество строк по каждому статусу (для чипов-фильтров).
-         */
-        get: operations["listCalculationRows"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/rows/{rowId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Расшифровка строки
-         * @description Полная расшифровка: применённая формула, компоненты с подставленными
-         *     значениями и источниками, альтернативные формулы, итоговая цена.
-         */
-        get: operations["getRowDetails"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/rows/{rowId}/manual-price": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Установить ручную цену
-         * @description Заменяет расчётную цену строки ручным значением. KPI пересчитываются.
-         */
-        put: operations["setManualPrice"];
-        post?: never;
-        /**
-         * Сбросить ручную правку
-         * @description Возвращает строке расчётную цену по применённой формуле.
-         */
-        delete: operations["resetManualPrice"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/rows/{rowId}/formula": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Выбрать формулу из нескольких подходящих
-         * @description Когда к строке подошло несколько формул, по умолчанию применяется
-         *     самая новая (по дате создания). Этим методом пользователь фиксирует
-         *     свой выбор — цена строки и KPI пересчитываются.
-         */
-        put: operations["selectRowFormula"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Выгрузка расчёта в Excel */
-        get: operations["exportCalculation"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/calculations/{calculationId}/submission": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Присоединить участок к сводному документу
-         * @description Аналитик фиксирует свой участок расчёта и присоединяет его
-         *     к сводному документу за период. До присоединения участок
-         *     отображается в документе как черновик.
-         */
-        post: operations["submitCalculationPart"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/formulas/parse": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Распарсить и провалидировать выражение формулы
-         * @description Разбирает текст договорной формулы и возвращает извлечённые переменные
-         *     и использованные функции. Используется движком расчёта и UI
-         *     (подсветка/валидация выражения в расшифровке).
-         *
-         *     Грамматика выражений (как в эталонном алгоритме):
-         *     * операторы: `+ - * / % **`, унарный минус, скобки;
-         *     * сравнения: `< <= > >= = <>`;
-         *     * функции: `IF(cond, then, else)`, `RND_X(value, digits)` —
-         *       коммерческое округление (half-up), `MIN(...)`, `MAX(...)`;
-         *     * переменные: имена компонентов формулы; допускаются символы
-         *       `$ € ¥ ₱`, цифры и `_`, имя может начинаться с цифры
-         *       (например `1_13`, `CUR_$_¥_PBC`).
-         */
-        post: operations["parseFormula"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/consolidated/{period}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Сводный документ за период
-         * @description Документ собирается из участков нескольких аналитиков.
-         *     Содержит список участков со статусами, сводные KPI и полную таблицу строк.
-         */
-        get: operations["getConsolidatedDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/consolidated/{period}/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Выгрузка сводного документа в Excel
-         * @description В выгрузку входят только присоединённые участки.
-         */
-        get: operations["exportConsolidatedDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-}
-export type webhooks = Record<string, never>;
-export interface components {
-    schemas: {
-        /** @description Стандартная ошибка API */
-        Error: {
-            /**
-             * @description Машиночитаемый код ошибки
-             * @example validation_failed
-             */
-            code: string;
-            /**
-             * @description Человекочитаемое сообщение
-             * @example цена должна быть больше нуля
-             */
-            message: string;
-            /** @description Детали по полям/строкам (опционально) */
-            details?: {
-                field?: string;
-                message?: string;
-            }[];
-        };
-        /**
-         * @description Ключ источника данных
-         * @enum {string}
-         */
-        SourceKey: "ssp" | "formulas" | "formula_components" | "term_types" | "quotes" | "quote_mapping" | "currency_rates" | "material_groups";
-        /** @description Источник данных и его статус */
-        Source: {
-            key: components["schemas"]["SourceKey"];
-            /**
-             * @description Отображаемое название
-             * @example Прогноз спроса
-             */
-            name: string;
-            /** @example ssp.xlsx */
-            file_name?: string;
-            /**
-             * @description uploaded — загружает пользователь, reference — справочник сервиса
-             * @enum {string}
-             */
-            kind: "uploaded" | "reference";
-            /** @enum {string} */
-            status: "missing" | "loaded" | "error";
-            /** @description Количество строк в загруженном файле */
-            row_count?: number | null;
-            /**
-             * @description Замечания валидации (дубли, пропуски)
-             * @example [
-             *       "2 дубля по ключу row_id"
-             *     ]
-             */
-            issues?: string[];
-            /** Format: date-time */
-            uploaded_at?: string | null;
-        };
-        /** @description Превью первых строк источника */
-        SourcePreview: {
-            /**
-             * @example [
-             *       "row_id",
-             *       "period",
-             *       "client_id",
-             *       "material_id",
-             *       "forecast",
-             *       "deal_type"
-             *     ]
-             */
-            columns: string[];
-            /** @description Значения строк в порядке columns */
-            rows: (string | null)[][];
-            /** @example 4812 */
-            total_rows: number;
-        };
-        /** @description Параметры запуска расчёта */
-        CreateCalculationRequest: {
-            /**
-             * @description Расчётный период YYYY-MM
-             * @example 2026-06
-             */
-            period: string;
-            /**
-             * @description Опциональное сужение по группам материалов
-             * @example [
-             *       "MT00000116"
-             *     ]
-             */
-            material_group_ids?: string[];
-        };
-        /** @enum {string} */
-        CalculationStatus: "pending" | "running" | "done" | "failed";
-        /** @description Расчёт и его прогресс */
-        Calculation: {
-            /** Format: uuid */
-            id: string;
-            /** @example 2026-06 */
-            period: string;
-            status: components["schemas"]["CalculationStatus"];
-            progress: components["schemas"]["CalculationProgress"];
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            finished_at?: string | null;
-        };
-        CalculationProgress: {
-            /** @example 2406 */
-            processed_rows: number;
-            /** @example 4812 */
-            total_rows: number;
-            /** @example 50 */
-            percent: number;
-        };
-        /** @description Событие SSE-потока прогресса расчёта */
-        CalculationProgressEvent: {
-            status: components["schemas"]["CalculationStatus"];
-            /** @example 2406 */
-            processed_rows: number;
-            /** @example 4812 */
-            total_rows: number;
-            /** @example 50 */
-            percent: number;
-        };
-        /**
-         * @description Пять канонических KPI отображения (documents/кпэ_для_отображения.md).
-         *     Метрика «совпало с эталоном ±3%» — вне UI-канона и в KPI не входит.
-         */
-        Kpi: {
-            /** @description % покрытия формулами строк спроса: строки Formula с candidate_count > 0 среди всех строк Formula (SPOT исключается) */
-            formula_coverage_pct: number;
-            /** @description % формул, которые вычисляются без ошибок: formula_id, у которых все кандидаты CALCULATED, среди всех найденных formula_id */
-            formulas_ok_pct: number;
-            /** @description Строк спроса с ошибкой расчёта формулы: contract = Formula, candidate_count > 0, цена пустая, status ∈ {component_error, invalid_formula} */
-            calc_error_rows: number;
-            /**
-             * Format: double
-             * @description Контрольная сумма, млн ₽: Σ(price × forecast × курс_к_RUB) / 1 000 000 по всем строкам с ценой (включая просроченные и конфликтные формулы)
-             */
-            control_sum_mln: number;
-            /** @description % непонятных ошибок: строки с неклассифицированной ошибкой среди всех строк с ошибкой (классифицированные — no_formula, component_error, invalid_formula) */
-            unclassified_error_pct: number;
-        };
-        /**
-         * @description Статус подбора и расчёта строки (соответствует статусам эталонного алгоритма):
-         *     * `calculated` — посчитано по актуальной формуле (CALCULATED);
-         *     * `calculated_expired` — посчитано по просроченной формуле, срок продлён
-         *       до периода строки (CALCULATED_WITH_EXPIRED_FORMULA);
-         *     * `formula_conflict` — несколько равноприоритетных формул, автоматически
-         *       выбрана с минимальным formula_id, требуется выбор пользователя
-         *       (CALCULATED_WITH_FORMULA_CONFLICT, requires_review);
-         *     * `manual` — применена ручная цена;
-         *     * `component_error` — не удалось получить значение компонента: нет котировки,
-         *       курса или маппинга на дату (COMPONENT_ERROR);
-         *     * `invalid_formula` — выражение формулы не распарсилось или вычисление
-         *       дало некорректное значение (INVALID_FORMULA);
-         *     * `no_formula` — ни одна формула не подобрана (FORMULA_NOT_FOUND);
-         *     * `spot_not_calculated` — строка SPOT, по формулам не считается
-         *       (SPOT_NOT_CALCULATED).
-         * @enum {string}
-         */
-        RowStatus: "calculated" | "calculated_expired" | "formula_conflict" | "manual" | "component_error" | "invalid_formula" | "no_formula" | "spot_not_calculated";
-        /**
-         * @description Тип сделки строки прогноза
-         * @enum {string}
-         */
-        DealType: "Formula" | "SPOT";
-        /** @description Строка результата расчёта (элемент таблицы) */
-        CalculationRow: {
-            /** @example 1034256 */
-            row_id: string;
-            /** @example 2026-06 */
-            period: string;
-            /** @example CL-10152 */
-            client_id: string;
-            /** @example Клиент 152 */
-            client_name: string;
-            /** @example 1182567 */
-            material_id: string;
-            /** @example Полистирол, марка 825ES */
-            material_name: string;
-            /** @example MT0002006 */
-            material_group_m?: string | null;
-            deal_type: components["schemas"]["DealType"];
-            /**
-             * @description Валюта строки (ISO-код)
-             * @example RUB
-             */
-            currency: string;
-            /**
-             * Format: double
-             * @description Объём, т
-             */
-            volume?: number | null;
-            status: components["schemas"]["RowStatus"];
-            /**
-             * Format: double
-             * @description Итоговая цена в валюте строки (null — цены нет)
-             */
-            final_price?: number | null;
-            /**
-             * @description Сколько формул подошло к строке
-             * @default 0
-             */
-            candidate_count: number;
-            /**
-             * @description Требуется выбор формулы пользователем (равноприоритетный конфликт)
-             * @default false
-             */
-            requires_review: boolean;
-            /** @description Предупреждение расчёта (например, использована просроченная формула) */
-            warning?: string | null;
-            /** @description Текст ошибки для проблемных статусов */
-            error?: string | null;
-            /** @description Совпадение с эталоном ±3% (null — эталона нет или цены нет) */
-            matched?: boolean | null;
-        };
-        /** @description Страница строк результата */
-        RowsPage: {
-            items: components["schemas"]["CalculationRow"][];
-            /** @description Всего строк под текущий фильтр */
-            total: number;
-            /**
-             * @description Количество строк по каждому статусу (для чипов-фильтров)
-             * @example {
-             *       "calculated": 677,
-             *       "calculated_expired": 108,
-             *       "formula_conflict": 4,
-             *       "component_error": 1167,
-             *       "no_formula": 812,
-             *       "spot_not_calculated": 308
-             *     }
-             */
-            status_counts: {
-                [key: string]: number;
-            };
-        };
-        /**
-         * @description Тип компонента формулы (по кодам термов SAP):
-         *     quote — котировка (1), currency_rate — курс валют (5),
-         *     constant — константа (H), markup — надбавка (A), logistics — логистика (B),
-         *     quote_correction — котировочная корректировка (C), discount — скидка (D),
-         *     other — прочее (E), price_list — прайс-лист (7), grouping — группировка (0/6).
-         * @enum {string}
-         */
-        ComponentType: "quote" | "currency_rate" | "constant" | "markup" | "logistics" | "quote_correction" | "discount" | "other" | "price_list" | "grouping";
-        /** @description Компонент (терм) формулы с подставленным значением */
-        FormulaComponent: {
-            /** @example CPT_MOSCOW_109 */
-            var_name: string;
-            type: components["schemas"]["ComponentType"];
-            /**
-             * @description Человекочитаемый тип (из справочника термов)
-             * @example Котировка
-             */
-            type_label?: string;
-            /**
-             * @description Разрешилось ли значение компонента
-             * @enum {string}
-             */
-            status: "ok" | "error";
-            /**
-             * Format: double
-             * @description Подставленное значение (null — значение не найдено)
-             */
-            value?: number | null;
-            /**
-             * @description Источник значения (файл/справочник)
-             * @example quotes.csv
-             */
-            source?: string;
-            /**
-             * @description Имя котировки из маппинга (для типа quote)
-             * @example PP raffia CPT Moscow
-             */
-            quote_name?: string | null;
-            /**
-             * Format: int64
-             * @description ID котировки в озере данных (для типа quote)
-             */
-            quote_code?: number | null;
-            /**
-             * Format: date
-             * @description Фактическая дата взятого значения (для котировок/курсов)
-             * @example 2026-06-15
-             */
-            value_date?: string | null;
-            /**
-             * @description Тип публикации взятого значения по каскаду Факт → ОФ → ППР
-             * @example Факт
-             */
-            version_type?: string | null;
-            /** @description На сколько дней дата значения отстоит от периода строки */
-            date_gap_days?: number | null;
-            /** @description Предупреждение (например, пустой фиксированный терм принят равным 0) */
-            warning?: string | null;
-            /** @description Причина ошибки компонента (нет маппинга / нет значений котировки / нет курса) */
-            error?: string | null;
-        };
-        /**
-         * @description Как формула сматчилась со строкой — напрямую по материалу или через группу M
-         * @enum {string}
-         */
-        MatchScope: "material" | "group_m";
-        /**
-         * @description Причина выбора формулы алгоритмом:
-         *     * `actual_successful` — актуальная успешно посчитанная формула;
-         *     * `latest_expired_successful` — последняя из просроченных успешных (продление);
-         *     * `technical_tie_break` — равноприоритетный конфликт, выбрана по минимальному formula_id;
-         *     * `no_successful` — ни одна не посчиталась, показана ошибка приоритетного кандидата;
-         *     * `user_selected` — формулу выбрал пользователь.
-         * @enum {string}
-         */
-        SelectionReason: "actual_successful" | "latest_expired_successful" | "technical_tie_break" | "no_successful" | "user_selected";
-        /** @description Формула, применённая к строке */
-        AppliedFormula: {
-            /** @example Z900026393 */
-            formula_id: string;
-            /**
-             * @description Исходное выражение формулы (грамматику см. в POST /formulas/parse)
-             * @example IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )
-             */
-            formula_text: string;
-            /**
-             * @description Переменные, извлечённые парсером из выражения
-             * @example [
-             *       "CPT_MOSCOW_109",
-             *       "L",
-             *       "H1",
-             *       "D",
-             *       "SPOT"
-             *     ]
-             */
-            variables?: string[];
-            /**
-             * @description Валюта документа формулы; цена конвертируется в валюту строки
-             * @example RUB
-             */
-            formula_currency?: string;
-            match_scope?: components["schemas"]["MatchScope"];
-            /**
-             * Format: date
-             * @example 2026-02-01
-             */
-            valid_from?: string;
-            /**
-             * Format: date
-             * @example 2027-12-31
-             */
-            valid_to?: string;
-            /**
-             * Format: date
-             * @description Дата создания в SAP — критерий выбора формулы по умолчанию
-             */
-            created_on?: string | null;
-            /** @description Период строки попадает в окно действия формулы */
-            is_actual?: boolean;
-            /**
-             * @description Формула просрочена и продлена до периода строки
-             * @default false
-             */
-            is_extended: boolean;
-            selection_reason?: components["schemas"]["SelectionReason"];
-        };
-        /**
-         * @description Формула-кандидат из списка подходящих. Все кандидаты считаются заранее
-         *     (цена каждого известна до выбора пользователя).
-         */
-        AlternativeFormula: {
-            formula_id: string;
-            formula_text: string;
-            match_scope?: components["schemas"]["MatchScope"];
-            /** Format: date */
-            valid_from?: string;
-            /** Format: date */
-            valid_to?: string;
-            /** Format: date */
-            created_on?: string | null;
-            /** @description Период строки в окне действия формулы */
-            is_actual?: boolean;
-            /**
-             * Format: double
-             * @description Цена строки при применении этой формулы (null — расчёт не удался)
-             */
-            price?: number | null;
-            /**
-             * @description Валюта документа формулы
-             * @example RUB
-             */
-            formula_currency?: string;
-            /**
-             * Format: double
-             * @description Цена в валюте документа формулы (до конвертации в валюту строки)
-             */
-            price_formula_currency?: number | null;
-            status?: components["schemas"]["RowStatus"];
-            /** @description Причина выбора (заполнена у применённого кандидата) */
-            selection_reason?: components["schemas"]["SelectionReason"];
-            /**
-             * @description Сколько кандидатов равноприоритетны этому (>1 — конфликт)
-             * @default 0
-             */
-            equal_priority_count: number;
-            /** @description Предупреждение расчёта кандидата (например, продление просроченной формулы) */
-            warning?: string | null;
-            /** @description Ошибка расчёта этого кандидата (компонент/парсинг) */
-            calc_error?: string | null;
-            /** @description Совпадение с эталоном ±3% при применении этой формулы (в UI не показывается) */
-            matched?: boolean | null;
-            /** @description Применена ли эта формула к строке сейчас */
-            is_selected: boolean;
-        };
-        /** @description Полная расшифровка строки расчёта */
-        RowDetails: {
-            row: components["schemas"]["CalculationRow"];
-            /** @description Отсутствует в ответе — формула не подобрана */
-            applied_formula?: components["schemas"]["AppliedFormula"];
-            /** @description Компоненты применённой формулы с подставленными значениями */
-            components: components["schemas"]["FormulaComponent"][];
-            /** @description Все подходящие формулы (включая применённую) */
-            alternatives: components["schemas"]["AlternativeFormula"][];
-            /**
-             * Format: double
-             * @description Цена в валюте документа формулы (до конвертации в валюту строки)
-             */
-            price_formula_currency?: number | null;
-            /** @description Как цена конвертирована из валюты формулы в валюту строки; отсутствует, если цены нет или валюты совпадают */
-            conversion?: components["schemas"]["CurrencyConversion"];
-            /**
-             * @description Сколько кандидатов оказалось равноприоритетными (>1 — конфликт)
-             * @default 0
-             */
-            equal_priority_count: number;
-            /**
-             * Format: double
-             * @description Ручная цена, если применена
-             */
-            manual_price?: number | null;
-            /**
-             * Format: double
-             * @description Эталонная цена для сверки (null — эталона нет)
-             */
-            reference_price?: number | null;
-        };
-        /** @description Детали конвертации цены между валютами через курсы к RUB */
-        CurrencyConversion: {
-            /** @example USD */
-            from_currency: string;
-            /** @example RUB */
-            to_currency: string;
-            /**
-             * Format: double
-             * @description Курс валюты формулы к RUB (null — identity)
-             */
-            from_rate?: number | null;
-            /**
-             * Format: double
-             * @description Курс валюты строки к RUB (null — identity)
-             */
-            to_rate?: number | null;
-            /**
-             * Format: date
-             * @description Дата взятых курсов
-             */
-            rate_date?: string | null;
-            /** @description Тип версии курса по каскаду Факт → ОФ → ППР */
-            version_type?: string | null;
-        };
-        ParseFormulaRequest: {
-            /**
-             * @description Текст выражения формулы
-             * @example IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )
-             */
-            formula_text: string;
-        };
-        /** @description Результат разбора выражения формулы */
-        ParsedFormula: {
-            /** @description Выражение синтаксически корректно и содержит только разрешённые элементы */
-            valid: boolean;
-            /**
-             * @description Уникальные переменные выражения в порядке появления
-             * @example [
-             *       "CPT_MOSCOW_109",
-             *       "L",
-             *       "H1",
-             *       "D",
-             *       "SPOT"
-             *     ]
-             */
-            variables: string[];
-            /**
-             * @description Использованные функции
-             * @example [
-             *       "IF"
-             *     ]
-             */
-            functions: ("IF" | "RND_X" | "MIN" | "MAX")[];
-            /** @description Ошибки разбора (пусто, если valid=true) */
-            errors?: {
-                /** @example запрещённый элемент формулы: Attribute */
-                message: string;
-                /** @description Позиция ошибки в строке выражения (если известна) */
-                position?: number | null;
-            }[];
-        };
-        ManualPriceRequest: {
-            /**
-             * Format: double
-             * @description Ручная цена в валюте строки, строго больше нуля
-             */
-            price: number;
-        };
-        SelectFormulaRequest: {
-            /**
-             * @description Идентификатор формулы из списка alternatives
-             * @example Z900026393
-             */
-            formula_id: string;
-        };
-        /**
-         * @description Статус участка аналитика в сводном документе
-         * @enum {string}
-         */
-        PartStatus: "draft" | "review" | "joined";
-        /** @description Участок одного аналитика в сводном документе */
-        ConsolidatedPart: {
-            /** Format: uuid */
-            calculation_id: string;
-            /** @example А. Смирнов */
-            analyst_name: string;
-            /**
-             * @description Название участка (зона ответственности)
-             * @example Ароматика и гликоли
-             */
-            part_name?: string | null;
-            status: components["schemas"]["PartStatus"];
-            row_count: number;
-            /** @description Покрытие участка ценами, % */
-            priced_pct?: number;
-            /** Format: date-time */
-            submitted_at?: string | null;
-        };
-        /** @description Строка сводного документа */
-        ConsolidatedRow: {
-            analyst_name: string;
-            /**
-             * @description Строка из неприсоединённого участка (черновик)
-             * @default false
-             */
-            is_draft: boolean;
-            row: components["schemas"]["CalculationRow"];
-        };
-        /** @description Сводный документ за расчётный период */
-        ConsolidatedDocument: {
-            /** @example 2026-06 */
-            period: string;
-            parts: components["schemas"]["ConsolidatedPart"][];
-            kpi: components["schemas"]["Kpi"];
-            rows: components["schemas"]["ConsolidatedRow"][];
-            /** @description Всего строк в документе (для пагинации) */
-            total_rows: number;
-        };
-    };
-    responses: {
-        /** @description Некорректный запрос */
-        BadRequest: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /** @description Объект не найден */
-        NotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-    };
+  '/sources': {
     parameters: {
-        SourceKey: components["schemas"]["SourceKey"];
-        CalculationId: string;
-        /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
-        RowId: string;
-        /** @description Расчётный период в формате YYYY-MM */
-        Period: string;
-    };
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Статус всех источников данных
+     * @description Возвращает все 8 источников: 2 пользовательских (`ssp`, `formulas`)
+     *     и 6 справочников сервиса. Для каждого — статус загрузки и количество строк.
+     */
+    get: operations['listSources']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/sources/demo': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Активировать демо-набор источников
+     * @description Помечает пользовательские источники (`ssp`, `formulas`) загруженными
+     *     демо-данными из seed-миграций — без передачи файлов. После вызова
+     *     расчёт разрешён. Кнопка в UI показывается по флагу сборки.
+     */
+    post: operations['loadDemoSources']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/sources/reset': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Сбросить загрузку источников
+     * @description Возвращает приложение в начальное состояние: снимает отметки загрузки
+     *     пользовательских источников (`uploaded_at`), удаляет все расчёты
+     *     текущей сессии (включая ручные правки и присоединённые участки).
+     *     Данные таблиц не очищаются — повторная загрузка файла или активация
+     *     демо-набора снова разрешают расчёт.
+     */
+    post: operations['resetSources']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/sources/facets': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Значения для пикеров параметров расчёта
+     * @description Уникальные продукты и клиенты из загруженного прогноза спроса (ssp)
+     *     и границы горизонта (min/max месяц) для наполнения экрана параметров.
+     *     При отсутствии данных ssp списки пусты, границы — null.
+     */
+    get: operations['getSourceFacets']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/sources/{sourceKey}/file': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Загрузить файл источника
+     * @description Загрузка Excel-файла источника (multipart). В MVP пользователь загружает
+     *     `ssp` и `formulas`; остальные источники доступны для перезаливки при необходимости.
+     */
+    post: operations['uploadSourceFile']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/sources/{sourceKey}/preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Превью первых строк источника */
+    get: operations['previewSource']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Запустить расчёт
+     * @description Запускает асинхронный расчёт цен по загруженному прогнозу спроса.
+     *     Ошибка одной строки не останавливает расчёт — проблемные строки
+     *     помечаются статусом (`no_formula`, `missing_quote`).
+     */
+    post: operations['createCalculation']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Статус и прогресс расчёта */
+    get: operations['getCalculation']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Поток прогресса расчёта (SSE)
+     * @description Server-Sent Events поток прогресса расчёта. Каждое событие — JSON
+     *     `CalculationProgressEvent`. Поток завершается событием со `status: done`
+     *     (или `failed`). Клиент подписывается через EventSource.
+     */
+    get: operations['streamCalculationProgress']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/kpi': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Сводные KPI расчёта
+     * @description KPI пересчитываются после ручных правок и выбора формул.
+     */
+    get: operations['getCalculationKpi']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/rows': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Строки результата расчёта
+     * @description Таблица результатов с фильтрацией, поиском, сортировкой и пагинацией.
+     *     `status_counts` — количество строк по каждому статусу (для чипов-фильтров).
+     */
+    get: operations['listCalculationRows']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/rows/{rowId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Расшифровка строки
+     * @description Полная расшифровка: применённая формула, компоненты с подставленными
+     *     значениями и источниками, альтернативные формулы, итоговая цена.
+     */
+    get: operations['getRowDetails']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/rows/{rowId}/manual-price': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /**
+     * Установить ручную цену
+     * @description Заменяет расчётную цену строки ручным значением. KPI пересчитываются.
+     */
+    put: operations['setManualPrice']
+    post?: never
+    /**
+     * Сбросить ручную правку
+     * @description Возвращает строке расчётную цену по применённой формуле.
+     */
+    delete: operations['resetManualPrice']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/rows/{rowId}/formula': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /**
+     * Выбрать формулу из нескольких подходящих
+     * @description Когда к строке подошло несколько формул, по умолчанию применяется
+     *     самая новая (по дате создания). Этим методом пользователь фиксирует
+     *     свой выбор — цена строки и KPI пересчитываются.
+     */
+    put: operations['selectRowFormula']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Выгрузка расчёта в Excel */
+    get: operations['exportCalculation']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/calculations/{calculationId}/submission': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Присоединить участок к сводному документу
+     * @description Аналитик фиксирует свой участок расчёта и присоединяет его
+     *     к сводному документу за период. До присоединения участок
+     *     отображается в документе как черновик.
+     */
+    post: operations['submitCalculationPart']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/presence/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Поток присутствия аналитиков (SSE)
+     * @description Server-Sent Events поток количества аналитиков онлайн. Каждое открытое
+     *     соединение считается одним аналитиком (MVP без аутентификации).
+     *     Событие `PresenceEvent` приходит при подключении и при каждом изменении
+     *     числа подключений; периодически шлётся keep-alive комментарий.
+     *
+     *     Реализуется вне strict-сервера (нужен незабуференный flush долгоживущего
+     *     потока), поэтому исключён из кодогенерации (`exclude-operation-ids`).
+     */
+    get: operations['streamPresence']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/formulas/parse': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Распарсить и провалидировать выражение формулы
+     * @description Разбирает текст договорной формулы и возвращает извлечённые переменные
+     *     и использованные функции. Используется движком расчёта и UI
+     *     (подсветка/валидация выражения в расшифровке).
+     *
+     *     Грамматика выражений (как в эталонном алгоритме):
+     *     * операторы: `+ - * / % **`, унарный минус, скобки;
+     *     * сравнения: `< <= > >= = <>`;
+     *     * функции: `IF(cond, then, else)`, `RND_X(value, digits)` —
+     *       коммерческое округление (half-up), `MIN(...)`, `MAX(...)`;
+     *     * переменные: имена компонентов формулы; допускаются символы
+     *       `$ € ¥ ₱`, цифры и `_`, имя может начинаться с цифры
+     *       (например `1_13`, `CUR_$_¥_PBC`).
+     */
+    post: operations['parseFormula']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/consolidated/{period}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Сводный документ за период
+     * @description Документ собирается из участков нескольких аналитиков.
+     *     Содержит список участков со статусами, сводные KPI и полную таблицу строк.
+     */
+    get: operations['getConsolidatedDocument']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/consolidated/{period}/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Выгрузка сводного документа в Excel
+     * @description В выгрузку входят только присоединённые участки.
+     */
+    get: operations['exportConsolidatedDocument']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
-export type $defs = Record<string, never>;
+export type webhooks = Record<string, never>
+export interface components {
+  schemas: {
+    /** @description Стандартная ошибка API */
+    Error: {
+      /**
+       * @description Машиночитаемый код ошибки
+       * @example validation_failed
+       */
+      code: string
+      /**
+       * @description Человекочитаемое сообщение
+       * @example цена должна быть больше нуля
+       */
+      message: string
+      /** @description Детали по полям/строкам (опционально) */
+      details?: {
+        field?: string
+        message?: string
+      }[]
+    }
+    /**
+     * @description Ключ источника данных
+     * @enum {string}
+     */
+    SourceKey:
+      | 'ssp'
+      | 'formulas'
+      | 'formula_components'
+      | 'term_types'
+      | 'quotes'
+      | 'quote_mapping'
+      | 'currency_rates'
+      | 'material_groups'
+    /** @description Источник данных и его статус */
+    Source: {
+      key: components['schemas']['SourceKey']
+      /**
+       * @description Отображаемое название
+       * @example Прогноз спроса
+       */
+      name: string
+      /** @example ssp.xlsx */
+      file_name?: string
+      /**
+       * @description uploaded — загружает пользователь, reference — справочник сервиса
+       * @enum {string}
+       */
+      kind: 'uploaded' | 'reference'
+      /** @enum {string} */
+      status: 'missing' | 'loaded' | 'error'
+      /** @description Количество строк в загруженном файле */
+      row_count?: number | null
+      /**
+       * @description Замечания валидации (дубли, пропуски)
+       * @example [
+       *       "2 дубля по ключу row_id"
+       *     ]
+       */
+      issues?: string[]
+      /** Format: date-time */
+      uploaded_at?: string | null
+    }
+    /** @description Превью первых строк источника */
+    SourcePreview: {
+      /**
+       * @example [
+       *       "row_id",
+       *       "period",
+       *       "client_id",
+       *       "material_id",
+       *       "forecast",
+       *       "deal_type"
+       *     ]
+       */
+      columns: string[]
+      /** @description Значения строк в порядке columns */
+      rows: (string | null)[][]
+      /** @example 4812 */
+      total_rows: number
+    }
+    /** @description Значения для пикеров экрана параметров расчёта (из ssp) */
+    SourceFacets: {
+      /** @description Уникальные продукты, отсортированы по имени */
+      products: components['schemas']['ProductFacet'][]
+      /** @description Уникальные клиенты, отсортированы по имени */
+      clients: components['schemas']['ClientFacet'][]
+      /**
+       * @description Минимальный месяц горизонта YYYY-MM (null — нет данных)
+       * @example 2026-06
+       */
+      period_min?: string | null
+      /**
+       * @description Максимальный месяц горизонта YYYY-MM (null — нет данных)
+       * @example 2027-03
+       */
+      period_max?: string | null
+    }
+    ProductFacet: {
+      /**
+       * Format: int64
+       * @description Код материала НСИ (mtr_nsi_code)
+       * @example 226814
+       */
+      id: number
+      /** @example Полипропилен, марка PP H030 GP/3 */
+      name: string
+    }
+    ClientFacet: {
+      /**
+       * @description Идентификатор клиента (client_id)
+       * @example CL-10328
+       */
+      id: string
+      /** @example Клиент 328 */
+      name: string
+    }
+    /**
+     * @description Параметры запуска расчёта. Диапазон месяцев period_from..period_to
+     *     (обе границы необязательны — отсутствие обоих означает «весь горизонт»);
+     *     product_ids и client_ids — сужение по продуктам и клиентам (пустой список = все).
+     *     Внутри одного фильтра значения объединяются по OR, между продуктом и клиентом — AND.
+     */
+    CreateCalculationRequest: {
+      /**
+       * @description Начало диапазона, месяц YYYY-MM (null — с начала горизонта)
+       * @example 2026-06
+       */
+      period_from?: string | null
+      /**
+       * @description Конец диапазона, месяц YYYY-MM включительно (null — до конца горизонта)
+       * @example 2026-09
+       */
+      period_to?: string | null
+      /**
+       * @description Сужение по кодам материалов НСИ (пусто — все продукты)
+       * @example [
+       *       226814,
+       *       1382340
+       *     ]
+       */
+      product_ids?: number[]
+      /**
+       * @description Сужение по идентификаторам клиентов (пусто — все клиенты)
+       * @example [
+       *       "CL-10328"
+       *     ]
+       */
+      client_ids?: string[]
+    }
+    /** @enum {string} */
+    CalculationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** @description Расчёт и его прогресс */
+    Calculation: {
+      /** Format: uuid */
+      id: string
+      /** @example 2026-06 */
+      period: string
+      status: components['schemas']['CalculationStatus']
+      progress: components['schemas']['CalculationProgress']
+      /** Format: date-time */
+      created_at: string
+      /** Format: date-time */
+      finished_at?: string | null
+    }
+    CalculationProgress: {
+      /** @example 2406 */
+      processed_rows: number
+      /** @example 4812 */
+      total_rows: number
+      /** @example 50 */
+      percent: number
+    }
+    /** @description Событие SSE-потока прогресса расчёта */
+    CalculationProgressEvent: {
+      status: components['schemas']['CalculationStatus']
+      /** @example 2406 */
+      processed_rows: number
+      /** @example 4812 */
+      total_rows: number
+      /** @example 50 */
+      percent: number
+    }
+    /** @description Событие SSE-потока присутствия — число аналитиков онлайн */
+    PresenceEvent: {
+      /** @example 3 */
+      analysts_online: number
+    }
+    /**
+     * @description Пять канонических KPI отображения (documents/кпэ_для_отображения.md).
+     *     Метрика «совпало с эталоном ±3%» — вне UI-канона и в KPI не входит.
+     */
+    Kpi: {
+      /** @description % покрытия формулами строк спроса: строки Formula с candidate_count > 0 среди всех строк Formula (SPOT исключается) */
+      formula_coverage_pct: number
+      /** @description % формул, которые вычисляются без ошибок: formula_id, у которых все кандидаты CALCULATED, среди всех найденных formula_id */
+      formulas_ok_pct: number
+      /** @description Строк спроса с ошибкой расчёта формулы: contract = Formula, candidate_count > 0, цена пустая, status ∈ {component_error, invalid_formula} */
+      calc_error_rows: number
+      /**
+       * Format: double
+       * @description Контрольная сумма, млн ₽: Σ(price × forecast × курс_к_RUB) / 1 000 000 по всем строкам с ценой (включая просроченные и конфликтные формулы)
+       */
+      control_sum_mln: number
+      /** @description % непонятных ошибок: строки с неклассифицированной ошибкой среди всех строк с ошибкой (классифицированные — no_formula, component_error, invalid_formula) */
+      unclassified_error_pct: number
+    }
+    /**
+     * @description Статус подбора и расчёта строки (соответствует статусам эталонного алгоритма):
+     *     * `calculated` — посчитано по актуальной формуле (CALCULATED);
+     *     * `calculated_expired` — посчитано по просроченной формуле, срок продлён
+     *       до периода строки (CALCULATED_WITH_EXPIRED_FORMULA);
+     *     * `formula_conflict` — несколько равноприоритетных формул, автоматически
+     *       выбрана с минимальным formula_id, требуется выбор пользователя
+     *       (CALCULATED_WITH_FORMULA_CONFLICT, requires_review);
+     *     * `manual` — применена ручная цена;
+     *     * `component_error` — не удалось получить значение компонента: нет котировки,
+     *       курса или маппинга на дату (COMPONENT_ERROR);
+     *     * `invalid_formula` — выражение формулы не распарсилось или вычисление
+     *       дало некорректное значение (INVALID_FORMULA);
+     *     * `no_formula` — ни одна формула не подобрана (FORMULA_NOT_FOUND);
+     *     * `spot_not_calculated` — строка SPOT, по формулам не считается
+     *       (SPOT_NOT_CALCULATED).
+     * @enum {string}
+     */
+    RowStatus:
+      | 'calculated'
+      | 'calculated_expired'
+      | 'formula_conflict'
+      | 'manual'
+      | 'component_error'
+      | 'invalid_formula'
+      | 'no_formula'
+      | 'spot_not_calculated'
+    /**
+     * @description Тип сделки строки прогноза
+     * @enum {string}
+     */
+    DealType: 'Formula' | 'SPOT'
+    /** @description Строка результата расчёта (элемент таблицы) */
+    CalculationRow: {
+      /** @example 1034256 */
+      row_id: string
+      /** @example 2026-06 */
+      period: string
+      /** @example CL-10152 */
+      client_id: string
+      /** @example Клиент 152 */
+      client_name: string
+      /** @example 1182567 */
+      material_id: string
+      /** @example Полистирол, марка 825ES */
+      material_name: string
+      /** @example MT0002006 */
+      material_group_m?: string | null
+      deal_type: components['schemas']['DealType']
+      /**
+       * @description Валюта строки (ISO-код)
+       * @example RUB
+       */
+      currency: string
+      /**
+       * Format: double
+       * @description Объём, т
+       */
+      volume?: number | null
+      status: components['schemas']['RowStatus']
+      /**
+       * Format: double
+       * @description Итоговая цена в валюте строки (null — цены нет)
+       */
+      final_price?: number | null
+      /**
+       * @description Сколько формул подошло к строке
+       * @default 0
+       */
+      candidate_count: number
+      /**
+       * @description Требуется выбор формулы пользователем (равноприоритетный конфликт)
+       * @default false
+       */
+      requires_review: boolean
+      /** @description Предупреждение расчёта (например, использована просроченная формула) */
+      warning?: string | null
+      /** @description Текст ошибки для проблемных статусов */
+      error?: string | null
+      /** @description Совпадение с эталоном ±3% (null — эталона нет или цены нет) */
+      matched?: boolean | null
+    }
+    /** @description Страница строк результата */
+    RowsPage: {
+      items: components['schemas']['CalculationRow'][]
+      /** @description Всего строк под текущий фильтр */
+      total: number
+      /**
+       * @description Количество строк по каждому статусу (для чипов-фильтров)
+       * @example {
+       *       "calculated": 677,
+       *       "calculated_expired": 108,
+       *       "formula_conflict": 4,
+       *       "component_error": 1167,
+       *       "no_formula": 812,
+       *       "spot_not_calculated": 308
+       *     }
+       */
+      status_counts: {
+        [key: string]: number
+      }
+    }
+    /**
+     * @description Тип компонента формулы (по кодам термов SAP):
+     *     quote — котировка (1), currency_rate — курс валют (5),
+     *     constant — константа (H), markup — надбавка (A), logistics — логистика (B),
+     *     quote_correction — котировочная корректировка (C), discount — скидка (D),
+     *     other — прочее (E), price_list — прайс-лист (7), grouping — группировка (0/6).
+     * @enum {string}
+     */
+    ComponentType:
+      | 'quote'
+      | 'currency_rate'
+      | 'constant'
+      | 'markup'
+      | 'logistics'
+      | 'quote_correction'
+      | 'discount'
+      | 'other'
+      | 'price_list'
+      | 'grouping'
+    /** @description Компонент (терм) формулы с подставленным значением */
+    FormulaComponent: {
+      /** @example CPT_MOSCOW_109 */
+      var_name: string
+      type: components['schemas']['ComponentType']
+      /**
+       * @description Человекочитаемый тип (из справочника термов)
+       * @example Котировка
+       */
+      type_label?: string
+      /**
+       * @description Разрешилось ли значение компонента
+       * @enum {string}
+       */
+      status: 'ok' | 'error'
+      /**
+       * Format: double
+       * @description Подставленное значение (null — значение не найдено)
+       */
+      value?: number | null
+      /**
+       * @description Источник значения (файл/справочник)
+       * @example quotes.csv
+       */
+      source?: string
+      /**
+       * @description Имя котировки из маппинга (для типа quote)
+       * @example PP raffia CPT Moscow
+       */
+      quote_name?: string | null
+      /**
+       * Format: int64
+       * @description ID котировки в озере данных (для типа quote)
+       */
+      quote_code?: number | null
+      /**
+       * Format: date
+       * @description Фактическая дата взятого значения (для котировок/курсов)
+       * @example 2026-06-15
+       */
+      value_date?: string | null
+      /**
+       * @description Тип публикации взятого значения по каскаду Факт → ОФ → ППР
+       * @example Факт
+       */
+      version_type?: string | null
+      /** @description На сколько дней дата значения отстоит от периода строки */
+      date_gap_days?: number | null
+      /** @description Предупреждение (например, пустой фиксированный терм принят равным 0) */
+      warning?: string | null
+      /** @description Причина ошибки компонента (нет маппинга / нет значений котировки / нет курса) */
+      error?: string | null
+    }
+    /**
+     * @description Как формула сматчилась со строкой — напрямую по материалу или через группу M
+     * @enum {string}
+     */
+    MatchScope: 'material' | 'group_m'
+    /**
+     * @description Причина выбора формулы алгоритмом:
+     *     * `actual_successful` — актуальная успешно посчитанная формула;
+     *     * `latest_expired_successful` — последняя из просроченных успешных (продление);
+     *     * `technical_tie_break` — равноприоритетный конфликт, выбрана по минимальному formula_id;
+     *     * `no_successful` — ни одна не посчиталась, показана ошибка приоритетного кандидата;
+     *     * `user_selected` — формулу выбрал пользователь.
+     * @enum {string}
+     */
+    SelectionReason:
+      | 'actual_successful'
+      | 'latest_expired_successful'
+      | 'technical_tie_break'
+      | 'no_successful'
+      | 'user_selected'
+    /** @description Формула, применённая к строке */
+    AppliedFormula: {
+      /** @example Z900026393 */
+      formula_id: string
+      /**
+       * @description Исходное выражение формулы (грамматику см. в POST /formulas/parse)
+       * @example IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )
+       */
+      formula_text: string
+      /**
+       * @description Переменные, извлечённые парсером из выражения
+       * @example [
+       *       "CPT_MOSCOW_109",
+       *       "L",
+       *       "H1",
+       *       "D",
+       *       "SPOT"
+       *     ]
+       */
+      variables?: string[]
+      /**
+       * @description Валюта документа формулы; цена конвертируется в валюту строки
+       * @example RUB
+       */
+      formula_currency?: string
+      match_scope?: components['schemas']['MatchScope']
+      /**
+       * Format: date
+       * @example 2026-02-01
+       */
+      valid_from?: string
+      /**
+       * Format: date
+       * @example 2027-12-31
+       */
+      valid_to?: string
+      /**
+       * Format: date
+       * @description Дата создания в SAP — критерий выбора формулы по умолчанию
+       */
+      created_on?: string | null
+      /** @description Период строки попадает в окно действия формулы */
+      is_actual?: boolean
+      /**
+       * @description Формула просрочена и продлена до периода строки
+       * @default false
+       */
+      is_extended: boolean
+      selection_reason?: components['schemas']['SelectionReason']
+    }
+    /**
+     * @description Формула-кандидат из списка подходящих. Все кандидаты считаются заранее
+     *     (цена каждого известна до выбора пользователя).
+     */
+    AlternativeFormula: {
+      formula_id: string
+      formula_text: string
+      match_scope?: components['schemas']['MatchScope']
+      /** Format: date */
+      valid_from?: string
+      /** Format: date */
+      valid_to?: string
+      /** Format: date */
+      created_on?: string | null
+      /** @description Период строки в окне действия формулы */
+      is_actual?: boolean
+      /**
+       * Format: double
+       * @description Цена строки при применении этой формулы (null — расчёт не удался)
+       */
+      price?: number | null
+      /**
+       * @description Валюта документа формулы
+       * @example RUB
+       */
+      formula_currency?: string
+      /**
+       * Format: double
+       * @description Цена в валюте документа формулы (до конвертации в валюту строки)
+       */
+      price_formula_currency?: number | null
+      status?: components['schemas']['RowStatus']
+      /** @description Причина выбора (заполнена у применённого кандидата) */
+      selection_reason?: components['schemas']['SelectionReason']
+      /**
+       * @description Сколько кандидатов равноприоритетны этому (>1 — конфликт)
+       * @default 0
+       */
+      equal_priority_count: number
+      /** @description Предупреждение расчёта кандидата (например, продление просроченной формулы) */
+      warning?: string | null
+      /** @description Ошибка расчёта этого кандидата (компонент/парсинг) */
+      calc_error?: string | null
+      /** @description Совпадение с эталоном ±3% при применении этой формулы (в UI не показывается) */
+      matched?: boolean | null
+      /** @description Применена ли эта формула к строке сейчас */
+      is_selected: boolean
+    }
+    /** @description Полная расшифровка строки расчёта */
+    RowDetails: {
+      row: components['schemas']['CalculationRow']
+      /** @description Отсутствует в ответе — формула не подобрана */
+      applied_formula?: components['schemas']['AppliedFormula']
+      /** @description Компоненты применённой формулы с подставленными значениями */
+      components: components['schemas']['FormulaComponent'][]
+      /** @description Все подходящие формулы (включая применённую) */
+      alternatives: components['schemas']['AlternativeFormula'][]
+      /**
+       * Format: double
+       * @description Цена в валюте документа формулы (до конвертации в валюту строки)
+       */
+      price_formula_currency?: number | null
+      /** @description Как цена конвертирована из валюты формулы в валюту строки; отсутствует, если цены нет или валюты совпадают */
+      conversion?: components['schemas']['CurrencyConversion']
+      /**
+       * @description Сколько кандидатов оказалось равноприоритетными (>1 — конфликт)
+       * @default 0
+       */
+      equal_priority_count: number
+      /**
+       * Format: double
+       * @description Ручная цена, если применена
+       */
+      manual_price?: number | null
+      /**
+       * Format: double
+       * @description Эталонная цена для сверки (null — эталона нет)
+       */
+      reference_price?: number | null
+    }
+    /** @description Детали конвертации цены между валютами через курсы к RUB */
+    CurrencyConversion: {
+      /** @example USD */
+      from_currency: string
+      /** @example RUB */
+      to_currency: string
+      /**
+       * Format: double
+       * @description Курс валюты формулы к RUB (null — identity)
+       */
+      from_rate?: number | null
+      /**
+       * Format: double
+       * @description Курс валюты строки к RUB (null — identity)
+       */
+      to_rate?: number | null
+      /**
+       * Format: date
+       * @description Дата взятых курсов
+       */
+      rate_date?: string | null
+      /** @description Тип версии курса по каскаду Факт → ОФ → ППР */
+      version_type?: string | null
+    }
+    ParseFormulaRequest: {
+      /**
+       * @description Текст выражения формулы
+       * @example IF ( ( ( CPT_MOSCOW_109 - L ) / H1 ) * D < SPOT , ( ( CPT_MOSCOW_109 - L ) / H1 ) * D , SPOT )
+       */
+      formula_text: string
+    }
+    /** @description Результат разбора выражения формулы */
+    ParsedFormula: {
+      /** @description Выражение синтаксически корректно и содержит только разрешённые элементы */
+      valid: boolean
+      /**
+       * @description Уникальные переменные выражения в порядке появления
+       * @example [
+       *       "CPT_MOSCOW_109",
+       *       "L",
+       *       "H1",
+       *       "D",
+       *       "SPOT"
+       *     ]
+       */
+      variables: string[]
+      /**
+       * @description Использованные функции
+       * @example [
+       *       "IF"
+       *     ]
+       */
+      functions: ('IF' | 'RND_X' | 'MIN' | 'MAX')[]
+      /** @description Ошибки разбора (пусто, если valid=true) */
+      errors?: {
+        /** @example запрещённый элемент формулы: Attribute */
+        message: string
+        /** @description Позиция ошибки в строке выражения (если известна) */
+        position?: number | null
+      }[]
+    }
+    ManualPriceRequest: {
+      /**
+       * Format: double
+       * @description Ручная цена в валюте строки, строго больше нуля
+       */
+      price: number
+    }
+    SelectFormulaRequest: {
+      /**
+       * @description Идентификатор формулы из списка alternatives
+       * @example Z900026393
+       */
+      formula_id: string
+    }
+    /**
+     * @description Статус участка аналитика в сводном документе
+     * @enum {string}
+     */
+    PartStatus: 'draft' | 'review' | 'joined'
+    /** @description Участок одного аналитика в сводном документе */
+    ConsolidatedPart: {
+      /** Format: uuid */
+      calculation_id: string
+      /** @example А. Смирнов */
+      analyst_name: string
+      /**
+       * @description Название участка (зона ответственности)
+       * @example Ароматика и гликоли
+       */
+      part_name?: string | null
+      status: components['schemas']['PartStatus']
+      row_count: number
+      /** @description Покрытие участка ценами, % */
+      priced_pct?: number
+      /** Format: date-time */
+      submitted_at?: string | null
+    }
+    /** @description Строка сводного документа */
+    ConsolidatedRow: {
+      analyst_name: string
+      /**
+       * @description Строка из неприсоединённого участка (черновик)
+       * @default false
+       */
+      is_draft: boolean
+      row: components['schemas']['CalculationRow']
+    }
+    /** @description Сводный документ за расчётный период */
+    ConsolidatedDocument: {
+      /** @example 2026-06 */
+      period: string
+      parts: components['schemas']['ConsolidatedPart'][]
+      kpi: components['schemas']['Kpi']
+      rows: components['schemas']['ConsolidatedRow'][]
+      /** @description Всего строк в документе (для пагинации) */
+      total_rows: number
+    }
+  }
+  responses: {
+    /** @description Некорректный запрос */
+    BadRequest: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['Error']
+      }
+    }
+    /** @description Объект не найден */
+    NotFound: {
+      headers: {
+        [name: string]: unknown
+      }
+      content: {
+        'application/json': components['schemas']['Error']
+      }
+    }
+  }
+  parameters: {
+    SourceKey: components['schemas']['SourceKey']
+    CalculationId: string
+    /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
+    RowId: string
+    /** @description Расчётный период YYYY-MM либо 'all' — весь горизонт спроса */
+    Period: string
+  }
+  requestBodies: never
+  headers: never
+  pathItems: never
+}
+export type $defs = Record<string, never>
 export interface operations {
-    listSources: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Список источников */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Source"][];
-                    };
-                };
-            };
-        };
-    };
-    uploadSourceFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sourceKey: components["parameters"]["SourceKey"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /**
-                     * Format: binary
-                     * @description Файл .xlsx (один лист)
-                     */
-                    file: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Файл принят и провалидирован */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Source"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            /** @description Файл не прошёл валидацию (структура/дубли) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    previewSource: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                sourceKey: components["parameters"]["SourceKey"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Первые строки файла */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SourcePreview"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createCalculation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCalculationRequest"];
-            };
-        };
-        responses: {
-            /** @description Расчёт принят в работу */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Calculation"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            /** @description Источники не загружены — расчёт невозможен */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    getCalculation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Текущее состояние расчёта */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Calculation"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    streamCalculationProgress: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Поток событий прогресса */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["CalculationProgressEvent"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getCalculationKpi: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Показатели качества расчёта */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Kpi"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listCalculationRows: {
-        parameters: {
-            query?: {
-                /** @description Фильтр по статусу подбора */
-                status?: components["schemas"]["RowStatus"];
-                /** @description Поиск по клиенту, материалу, row_id */
-                query?: string;
-                sort?: "row_id" | "client" | "material" | "volume" | "price";
-                order?: "asc" | "desc";
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Страница строк + счётчики статусов */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RowsPage"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getRowDetails: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-                /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
-                rowId: components["parameters"]["RowId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Расшифровка строки */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RowDetails"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    setManualPrice: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-                /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
-                rowId: components["parameters"]["RowId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ManualPriceRequest"];
-            };
-        };
-        responses: {
-            /** @description Ручная цена применена */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RowDetails"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            404: components["responses"]["NotFound"];
-            /** @description Невалидная цена (не число / ≤ 0) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    resetManualPrice: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-                /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
-                rowId: components["parameters"]["RowId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Правка сброшена */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RowDetails"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    selectRowFormula: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-                /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
-                rowId: components["parameters"]["RowId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SelectFormulaRequest"];
-            };
-        };
-        responses: {
-            /** @description Формула применена, цена пересчитана */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RowDetails"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-            /** @description Формула не входит в список подходящих для строки */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    exportCalculation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Файл .xlsx с результатами расчёта */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    submitCalculationPart: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calculationId: components["parameters"]["CalculationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Участок присоединён */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsolidatedPart"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-            /** @description Участок уже присоединён */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    parseFormula: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ParseFormulaRequest"];
-            };
-        };
-        responses: {
-            /** @description Результат разбора (в т.ч. невалидное выражение — с ошибками) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ParsedFormula"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-        };
-    };
-    getConsolidatedDocument: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Расчётный период в формате YYYY-MM */
-                period: components["parameters"]["Period"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Сводный документ */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsolidatedDocument"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    exportConsolidatedDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Расчётный период в формате YYYY-MM */
-                period: components["parameters"]["Period"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Файл .xlsx со сводным документом */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
+  listSources: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Список источников */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            items: components['schemas']['Source'][]
+          }
+        }
+      }
+    }
+  }
+  loadDemoSources: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Демо-набор активирован */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            items: components['schemas']['Source'][]
+          }
+        }
+      }
+    }
+  }
+  resetSources: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Состояние сброшено */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            items: components['schemas']['Source'][]
+          }
+        }
+      }
+    }
+  }
+  getSourceFacets: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Фасеты источников */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceFacets']
+        }
+      }
+    }
+  }
+  uploadSourceFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        sourceKey: components['parameters']['SourceKey']
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Файл .xlsx (один лист)
+           */
+          file: string
+        }
+      }
+    }
+    responses: {
+      /** @description Файл принят и провалидирован */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Source']
+        }
+      }
+      400: components['responses']['BadRequest']
+      /** @description Файл не прошёл валидацию (структура/дубли) */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
+        }
+      }
+    }
+  }
+  previewSource: {
+    parameters: {
+      query?: {
+        limit?: number
+      }
+      header?: never
+      path: {
+        sourceKey: components['parameters']['SourceKey']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Первые строки файла */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourcePreview']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  createCalculation: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCalculationRequest']
+      }
+    }
+    responses: {
+      /** @description Расчёт принят в работу */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Calculation']
+        }
+      }
+      400: components['responses']['BadRequest']
+      /** @description Источники не загружены — расчёт невозможен */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
+        }
+      }
+    }
+  }
+  getCalculation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Текущее состояние расчёта */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Calculation']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  streamCalculationProgress: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Поток событий прогресса */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/event-stream': components['schemas']['CalculationProgressEvent']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  getCalculationKpi: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Показатели качества расчёта */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Kpi']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  listCalculationRows: {
+    parameters: {
+      query?: {
+        /** @description Фильтр по статусу подбора */
+        status?: components['schemas']['RowStatus']
+        /** @description Поиск по клиенту, материалу, row_id */
+        query?: string
+        sort?: 'row_id' | 'client' | 'material' | 'volume' | 'price'
+        order?: 'asc' | 'desc'
+        limit?: number
+        offset?: number
+        /**
+         * @description Только строки с ошибкой формулы: формула подобрана (candidate_count > 0),
+         *     цены нет, статус ∈ {component_error, invalid_formula}. Взаимоисключающе со status.
+         */
+        only_formula_errors?: boolean
+      }
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Страница строк + счётчики статусов */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RowsPage']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  getRowDetails: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+        /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
+        rowId: components['parameters']['RowId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Расшифровка строки */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RowDetails']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  setManualPrice: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+        /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
+        rowId: components['parameters']['RowId']
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ManualPriceRequest']
+      }
+    }
+    responses: {
+      /** @description Ручная цена применена */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RowDetails']
+        }
+      }
+      400: components['responses']['BadRequest']
+      404: components['responses']['NotFound']
+      /** @description Невалидная цена (не число / ≤ 0) */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
+        }
+      }
+    }
+  }
+  resetManualPrice: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+        /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
+        rowId: components['parameters']['RowId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Правка сброшена */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RowDetails']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  selectRowFormula: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+        /** @description Идентификатор строки прогноза спроса (row_id из ssp) */
+        rowId: components['parameters']['RowId']
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SelectFormulaRequest']
+      }
+    }
+    responses: {
+      /** @description Формула применена, цена пересчитана */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RowDetails']
+        }
+      }
+      404: components['responses']['NotFound']
+      /** @description Формула не входит в список подходящих для строки */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
+        }
+      }
+    }
+  }
+  exportCalculation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Файл .xlsx с результатами расчёта */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': string
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  submitCalculationPart: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        calculationId: components['parameters']['CalculationId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Участок присоединён */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConsolidatedPart']
+        }
+      }
+      404: components['responses']['NotFound']
+      /** @description Участок уже присоединён */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
+        }
+      }
+    }
+  }
+  streamPresence: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Поток событий присутствия */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/event-stream': components['schemas']['PresenceEvent']
+        }
+      }
+    }
+  }
+  parseFormula: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ParseFormulaRequest']
+      }
+    }
+    responses: {
+      /** @description Результат разбора (в т.ч. невалидное выражение — с ошибками) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ParsedFormula']
+        }
+      }
+      400: components['responses']['BadRequest']
+    }
+  }
+  getConsolidatedDocument: {
+    parameters: {
+      query?: {
+        limit?: number
+        offset?: number
+      }
+      header?: never
+      path: {
+        /** @description Расчётный период YYYY-MM либо 'all' — весь горизонт спроса */
+        period: components['parameters']['Period']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Сводный документ */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConsolidatedDocument']
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
+  exportConsolidatedDocument: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Расчётный период YYYY-MM либо 'all' — весь горизонт спроса */
+        period: components['parameters']['Period']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Файл .xlsx со сводным документом */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': string
+        }
+      }
+      404: components['responses']['NotFound']
+    }
+  }
 }

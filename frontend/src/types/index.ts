@@ -13,6 +13,10 @@ export type ComponentType = Schemas['ComponentType']
 export type Source = Schemas['Source']
 export type SourceKey = Schemas['SourceKey']
 export type SourcePreview = Schemas['SourcePreview']
+export type SourceFacets = Schemas['SourceFacets']
+export type ProductFacet = Schemas['ProductFacet']
+export type ClientFacet = Schemas['ClientFacet']
+export type CreateCalculationRequest = Schemas['CreateCalculationRequest']
 
 export type Calculation = Schemas['Calculation']
 export type CalculationStatus = Schemas['CalculationStatus']
@@ -34,6 +38,15 @@ export type ConsolidatedPart = Schemas['ConsolidatedPart']
 export type ConsolidatedRow = Schemas['ConsolidatedRow']
 export type PartStatus = Schemas['PartStatus']
 
+// Параметры запуска расчёта: диапазон месяцев (обе границы опциональны — весь
+// горизонт) и фильтры продукта/клиента (пустые = все).
+export interface CalcParams {
+  periodFrom?: string
+  periodTo?: string
+  productIds?: number[]
+  clientIds?: string[]
+}
+
 // Параметры запроса строк результата.
 export interface RowsQuery {
   status?: RowStatus
@@ -42,4 +55,5 @@ export interface RowsQuery {
   order?: 'asc' | 'desc'
   limit?: number
   offset?: number
+  onlyFormulaErrors?: boolean
 }

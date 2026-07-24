@@ -211,7 +211,7 @@ func TestCreateCalculationWithoutSources(t *testing.T) {
 	})
 
 	// ни файлы, ни демо-набор не активированы — расчёт запрещён
-	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": "2026-06"})
+	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", calcBody("2026-06"))
 	tc.State.Response = Responses{Code: code, Body: body}
 }
 
@@ -243,7 +243,7 @@ func TestCreateCalculationAfterDemoActivation(t *testing.T) {
 	require.True(t, ok)
 	assert.NotEmpty(t, first["uploaded_at"])
 
-	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": "2026-06"})
+	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", calcBody("2026-06"))
 	tc.State.Response = Responses{Code: code, Body: body}
 }
 
@@ -282,7 +282,7 @@ func TestResetSourcesReturnsInitialState(t *testing.T) {
 	getCode, _, _ := do(t, tc.SUT, nethttp.MethodGet, "/api/v1/calculations/"+calcID, nil)
 	require.Equal(t, nethttp.StatusNotFound, getCode)
 
-	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", map[string]any{"period": "2026-06"})
+	code, body, _ := do(t, tc.SUT, nethttp.MethodPost, "/api/v1/calculations", calcBody("2026-06"))
 	tc.State.Response = Responses{Code: code, Body: body}
 }
 

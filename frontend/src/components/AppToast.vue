@@ -5,7 +5,14 @@ defineProps<{ message: string }>()
 <template>
   <Transition name="toast">
     <div v-if="message" class="mono toast">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+      >
         <path d="M20 6 9 17l-5-5" />
       </svg>
       {{ message }}

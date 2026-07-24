@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"sibur-petrochem-price-service/internal/domain"
+	"sibur-petrochem-price-service/internal/service/calculations"
 
 	api "sibur-petrochem-price-service/internal/generated/api"
 )
@@ -24,7 +25,7 @@ func (h *Handler) CreateCalculation(ctx context.Context, request api.CreateCalcu
 			"источники не загружены: загрузите ssp.xlsx и formulas.xlsx или активируйте демо-набор")), nil
 	}
 
-	info, err := h.calcs.Create(ctx, request.Body.Period)
+	info, err := h.calcs.Create(ctx, calcParams(request.Body))
 	if err != nil {
 		if errors.Is(err, domain.ErrSourcesNotLoaded) {
 			return api.CreateCalculation409JSONResponse(apiError("sources_not_loaded", err.Error())), nil
@@ -34,6 +35,26 @@ func (h *Handler) CreateCalculation(ctx context.Context, request api.CreateCalcu
 	}
 
 	return api.CreateCalculation202JSONResponse(mapInfo(info)), nil
+}
+
+// calcParams — тело запроса в параметры расчёта: nullable-границы диапазона и
+// необязательные списки продуктов/клиентов (пустые = все).
+func calcParams(body *api.CreateCalculationRequest) calculations.CalcParams {
+	params := calculations.CalcParams{}
+	if from, err := body.PeriodFrom.Get(); err == nil {
+		params.PeriodFrom = &from
+	}
+	if to, err := body.PeriodTo.Get(); err == nil {
+		params.PeriodTo = &to
+	}
+	if body.ProductIds != nil {
+		params.ProductIDs = *body.ProductIds
+	}
+	if body.ClientIds != nil {
+		params.ClientIDs = *body.ClientIds
+	}
+
+	return params
 }
 
 func (h *Handler) GetCalculation(_ context.Context, request api.GetCalculationRequestObject) (api.GetCalculationResponseObject, error) {
